@@ -56,9 +56,15 @@ export class User {
   updatedAt: Date;
 
   @BeforeInsert()
-  async hashPassword() {
+  async hashPassword(): Promise<void> {
     if (this.password && this.provider === AuthProvider.LOCAL) {
-      this.password = await bcrypt.hash(this.password, 10);
+      const salt = 10;
+      this.password = await (
+        bcrypt.hash as (
+          data: string,
+          saltOrRounds: string | number,
+        ) => Promise<string>
+      )(this.password, salt);
     }
   }
 
@@ -66,6 +72,8 @@ export class User {
     if (this.provider !== AuthProvider.LOCAL) {
       return false;
     }
-    return bcrypt.compare(password, this.password);
+    return await (
+      bcrypt.compare as (data: string, encrypted: string) => Promise<boolean>
+    )(password, this.password);
   }
 }

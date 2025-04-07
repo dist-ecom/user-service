@@ -1,0 +1,14 @@
+# Build output
+dist
+node_modules
+coverage
+
+# Config files
+.eslintrc.js
+jest.config.js
+prettier.config.js
+
+# Test files with lax rules
+**/*.spec.ts
+**/*.e2e-spec.ts
+test/**/* 

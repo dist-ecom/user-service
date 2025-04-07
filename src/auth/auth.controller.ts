@@ -10,7 +10,11 @@ import { AuthGuard } from '@nestjs/passport';
 import { AuthService } from './auth.service';
 import { UsersService } from '../users/users.service';
 import { CreateUserDto } from '../users/dto/create-user.dto';
-import { AuthProvider } from '../users/entities/user.entity';
+import { User, AuthProvider } from '../users/entities/user.entity';
+
+interface RequestWithUser {
+  user: User;
+}
 
 @Controller('auth')
 export class AuthController {
@@ -29,7 +33,7 @@ export class AuthController {
 
   @UseGuards(AuthGuard('local'))
   @Post('login')
-  async login(@Request() req) {
+  async login(@Request() req: RequestWithUser) {
     return this.authService.login(req.user);
   }
 
@@ -42,14 +46,14 @@ export class AuthController {
 
   @Get('google/callback')
   @UseGuards(AuthGuard('google'))
-  googleAuthCallback(@Request() req) {
+  googleAuthCallback(@Request() req: RequestWithUser) {
     // This route handles the Google OAuth callback
     return req.user;
   }
 
   @UseGuards(AuthGuard('jwt'))
   @Get('profile')
-  getProfile(@Request() req) {
+  getProfile(@Request() req: RequestWithUser) {
     return req.user;
   }
 }

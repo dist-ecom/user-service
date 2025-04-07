@@ -3,6 +3,12 @@ import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '../users/users.service';
 import { User, AuthProvider } from '../users/entities/user.entity';
 
+interface OAuthUser {
+  emails?: { value: string }[];
+  displayName?: string;
+  id: string;
+}
+
 @Injectable()
 export class AuthService {
   constructor(
@@ -23,6 +29,8 @@ export class AuthService {
   async login(user: User) {
     const payload = { email: user.email, sub: user.id, role: user.role };
 
+    const token = await Promise.resolve(this.jwtService.sign(payload));
+
     return {
       user: {
         id: user.id,
@@ -30,19 +38,19 @@ export class AuthService {
         name: user.name,
         role: user.role,
       },
-      access_token: this.jwtService.sign(payload),
+      access_token: token,
     };
   }
 
-  async validateOAuthLogin(profile: any, provider: AuthProvider) {
+  async validateOAuthLogin(profile: OAuthUser, provider: AuthProvider) {
     const { emails, displayName, id } = profile;
 
-    if (!emails || !emails.length) {
+    if (!emails || emails.length === 0) {
       throw new UnauthorizedException('Email is required for authentication');
     }
 
     const email = emails[0].value;
-    const name = displayName || email.split('@')[0];
+    const name = displayName || (email ? email.split('@')[0] : 'User');
 
     const user = await this.usersService.findOrCreateSocialUser(
       email,
@@ -51,6 +59,6 @@ export class AuthService {
       id,
     );
 
-    return this.login(user);
+    return await this.login(user);
   }
 }
