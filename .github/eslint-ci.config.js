@@ -1,11 +1,11 @@
 // CI-specific ESLint configuration
 // This is identical to the main eslint.config.js except it's guaranteed to be used in the CI environment
-import globals from 'globals';
-import js from '@eslint/js';
-import tseslint from 'typescript-eslint';
-import prettierConfig from 'eslint-config-prettier';
+const globals = require('globals');
+const js = require('@eslint/js');
+const tseslint = require('typescript-eslint');
+const prettierConfig = require('eslint-config-prettier');
 
-export default [
+module.exports = [
   // Base configuration for all files
   {
     ignores: ['dist/**', 'node_modules/**', '.eslintrc.js', 'coverage/**'],
