@@ -27,7 +27,9 @@ jobs:
       run: npm ci
       
     - name: Run linting
-      run: npm run lint
+      run: |
+        echo "Running ESLint with CI configuration"
+        npm run lint:ci
       
     - name: Run tests
       run: npm test
