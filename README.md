@@ -1,66 +1,158 @@
 # User Service
 
-A microservice for user management and authentication built with NestJS.
+## Overview
+The User Service is a key component of the ecommerce platform, providing authentication, user management, and role-based authorization. It's built using NestJS and follows RESTful API principles.
 
-## Description
-
-This service handles user-related operations including:
+## Features
 - User registration and authentication
+- OAuth integration with Google
 - JWT-based authentication
-- OAuth2 integration (Google)
-- User profile management
+- Role-based access control
+- User management (CRUD operations)
+- API documentation with Swagger
 
-## Technologies
-
-- NestJS (v11)
-- TypeScript
-- PostgreSQL
-- TypeORM
-- Passport.js
-- JWT
-- Class Validator
-- Jest (Testing)
+## Tech Stack
+- NestJS - Progressive Node.js framework
+- TypeORM - ORM for database interactions
+- PostgreSQL - Database
+- Passport.js - Authentication middleware
+- JWT - Token-based authentication
+- Swagger - API documentation
 
 ## Prerequisites
-
-- Node.js (v20 or higher)
-- PostgreSQL
+- Node.js (v18+)
 - npm or yarn
+- PostgreSQL
 
 ## Installation
 
-1. Clone the repository:
 ```bash
-git clone url
-cd user-service
-```
+# Clone the repository
+git clone <repository-url>
 
-2. Install dependencies:
-```bash
+# Navigate to the project directory
+cd user-service
+
+# Install dependencies
 npm install
 ```
 
-3. Create a `.env` file in the root directory with the following variables:
-```env
-PORT=3000
-DATABASE_URL=postgresql://username:password@localhost:5432/database_name
-JWT_SECRET=your_jwt_secret
+## Configuration
+
+The application uses environment variables for configuration. Create a `.env` file in the root directory with the following variables:
+
+```
+# Database
+DATABASE_HOST=localhost
+DATABASE_PORT=5432
+DATABASE_USERNAME=postgres
+DATABASE_PASSWORD=password
+DATABASE_NAME=user_service
+
+# JWT
+JWT_SECRET=your_jwt_secret_key
+JWT_EXPIRATION=1d
+
+# Google OAuth
 GOOGLE_CLIENT_ID=your_google_client_id
 GOOGLE_CLIENT_SECRET=your_google_client_secret
+GOOGLE_CALLBACK_URL=http://localhost:3000/auth/google/callback
+
+# App
+PORT=3000
+NODE_ENV=development
 ```
 
-## Running the Application
+## Running the App
 
-### Development
 ```bash
+# Development
 npm run start:dev
-```
 
-### Production
-```bash
+# Production mode
 npm run build
 npm run start:prod
 ```
+
+## API Documentation
+
+The API is documented using Swagger. Once the application is running, you can access the Swagger UI at:
+
+```
+http://localhost:3000/api
+```
+
+### Authentication
+
+#### Register a New User
+- **Endpoint**: POST /auth/register
+- **Description**: Register a new user with email and password
+- **Request Body**: 
+  - name: User's full name
+  - email: User's email address
+  - password: Password (min 6 characters)
+
+#### Login
+- **Endpoint**: POST /auth/login
+- **Description**: Authenticate a user and get JWT token
+- **Request Body**:
+  - email: User's email address
+  - password: Password
+
+#### Google OAuth
+- **Endpoint**: GET /auth/google
+- **Description**: Initiate Google OAuth flow
+- **Callback**: GET /auth/google/callback
+
+#### Get User Profile
+- **Endpoint**: GET /auth/profile
+- **Description**: Get the authenticated user's profile
+- **Authentication**: JWT Bearer token required
+
+### User Management
+
+#### Create User
+- **Endpoint**: POST /users
+- **Description**: Create a new user
+- **Authentication**: JWT Bearer token required
+- **Authorization**: Any authenticated user
+- **Request Body**: CreateUserDto
+
+#### Get All Users
+- **Endpoint**: GET /users
+- **Description**: Get a list of all users
+- **Authentication**: JWT Bearer token required
+- **Authorization**: Admin role required
+
+#### Get User by ID
+- **Endpoint**: GET /users/:id
+- **Description**: Get a specific user by ID
+- **Authentication**: JWT Bearer token required
+
+#### Update User
+- **Endpoint**: PATCH /users/:id
+- **Description**: Update a user's information
+- **Authentication**: JWT Bearer token required
+- **Request Body**: UpdateUserDto
+
+#### Delete User
+- **Endpoint**: DELETE /users/:id
+- **Description**: Delete a user
+- **Authentication**: JWT Bearer token required
+- **Authorization**: Admin role required
+
+## Database Schema
+
+### User Entity
+- id: UUID (Primary Key)
+- name: String
+- email: String (Unique)
+- password: String (Hashed)
+- role: Enum (USER, ADMIN)
+- provider: Enum (LOCAL, GOOGLE)
+- providerId: String
+- createdAt: DateTime
+- updatedAt: DateTime
 
 ## Testing
 
@@ -68,45 +160,36 @@ npm run start:prod
 # Unit tests
 npm run test
 
-# e2e tests
+# E2E tests
 npm run test:e2e
 
 # Test coverage
 npm run test:cov
 ```
 
-## API Documentation
+## API Response Formats
 
-The service exposes the following main endpoints:
-
-### Authentication
-- `POST /auth/register` - Register a new user
-- `POST /auth/login` - User login
-- `GET /auth/google` - Google OAuth login
-- `GET /auth/google/callback` - Google OAuth callback
-
-### Users
-- `GET /users/profile` - Get user profile
-- `PUT /users/profile` - Update user profile
-- `DELETE /users/profile` - Delete user account
-
-## Project Structure
-
-```
-src/
-├── auth/           # Authentication related modules
-├── users/          # User management modules
-├── main.ts         # Application entry point
-└── app.module.ts   # Root module
+### Success Response
+```json
+{
+  "statusCode": 200,
+  "data": {...}
+}
 ```
 
-## Contributing
+### Error Response
+```json
+{
+  "statusCode": 400,
+  "message": "Error message",
+  "error": "Error type"
+}
+```
 
-1. Create a feature branch
-2. Commit your changes
-3. Push to the branch
-4. Create a Pull Request
+## Additional Documentation
 
-## License
-
-This project is licensed under the UNLICENSED license.
+For more detailed documentation, please refer to the [docs](./docs) directory:
+- [API Reference](./docs/api-reference.md)
+- [Authentication Flow](./docs/authentication.md)
+- [Database Schema](./docs/database-schema.md)
+- [Deployment Guide](./docs/deployment.md)
