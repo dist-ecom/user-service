@@ -101,11 +101,11 @@ describe('AuthController', () => {
 
   describe('googleAuthCallback', () => {
     it('should return the user from the request', () => {
-      const req = { user: mockAuthResponse };
+      const req = { user: mockUser };
 
       const result = controller.googleAuthCallback(req);
 
-      expect(result).toEqual(mockAuthResponse);
+      expect(result).toEqual(mockUser);
     });
   });
 
