@@ -1,23 +1,30 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { UsersController } from './users.controller';
 import { UsersService } from './users.service';
-import { UserRole, AuthProvider } from './entities/user.entity';
+import { User, UserRole, AuthProvider } from './entities/user.entity';
+import { CreateAdminDto } from './dto/create-admin.dto';
+
+const mockUser = {
+  id: '123e4567-e89b-12d3-a456-426614174000',
+  name: 'Test User',
+  email: 'test@example.com',
+  password: 'hashedpassword',
+  role: UserRole.USER,
+  provider: AuthProvider.LOCAL,
+  providerId: '',
+  createdAt: new Date(),
+  updatedAt: new Date(),
+} as User;
+
+const mockAdmin = {
+  ...mockUser,
+  role: UserRole.ADMIN,
+  email: 'admin@yourdomain.com',
+} as User;
 
 describe('UsersController', () => {
   let controller: UsersController;
   let service: UsersService;
-
-  const mockUser = {
-    id: '123e4567-e89b-12d3-a456-426614174000',
-    name: 'Test User',
-    email: 'test@example.com',
-    password: 'hashedpassword',
-    role: UserRole.USER,
-    provider: AuthProvider.LOCAL,
-    providerId: null,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  };
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -26,14 +33,12 @@ describe('UsersController', () => {
         {
           provide: UsersService,
           useValue: {
-            create: jest.fn().mockResolvedValue(mockUser),
             findAll: jest.fn().mockResolvedValue([mockUser]),
             findOne: jest.fn().mockResolvedValue(mockUser),
-            update: jest.fn().mockResolvedValue({
-              ...mockUser,
-              name: 'Updated Name',
-            }),
+            create: jest.fn().mockResolvedValue(mockUser),
+            update: jest.fn().mockResolvedValue(mockUser),
             remove: jest.fn().mockResolvedValue(undefined),
+            createAdmin: jest.fn().mockResolvedValue(mockAdmin),
           },
         },
       ],
@@ -85,6 +90,14 @@ describe('UsersController', () => {
   describe('update', () => {
     it('should update a user', async () => {
       const updateUserDto = { name: 'Updated Name' };
+      const updatedUser = {
+        ...mockUser,
+        name: 'Updated Name',
+        hashPassword: jest.fn(),
+        validatePassword: jest.fn().mockResolvedValue(true),
+      } as User;
+
+      jest.spyOn(service, 'update').mockResolvedValueOnce(updatedUser);
 
       const result = await controller.update(
         '123e4567-e89b-12d3-a456-426614174000',
@@ -95,10 +108,7 @@ describe('UsersController', () => {
         '123e4567-e89b-12d3-a456-426614174000',
         updateUserDto,
       );
-      expect(result).toEqual({
-        ...mockUser,
-        name: 'Updated Name',
-      });
+      expect(result).toEqual(updatedUser);
     });
   });
 
@@ -112,6 +122,30 @@ describe('UsersController', () => {
         '123e4567-e89b-12d3-a456-426614174000',
       );
       expect(result).toBeUndefined();
+    });
+  });
+
+  describe('createAdmin', () => {
+    const createAdminDto: CreateAdminDto = {
+      name: 'Admin User',
+      email: 'admin@yourdomain.com',
+      password: 'StrongP@ss123',
+      adminSecretKey: 'test-admin-key',
+      provider: AuthProvider.LOCAL,
+    };
+
+    it('should create a new admin user', async () => {
+      const result = await controller.createAdmin(createAdminDto);
+
+      expect(result).toEqual(mockAdmin);
+      expect(service.createAdmin).toHaveBeenCalledWith(createAdminDto);
+    });
+
+    it('should handle service errors appropriately', async () => {
+      const error = new Error('Service error');
+      jest.spyOn(service, 'createAdmin').mockRejectedValueOnce(error);
+
+      await expect(controller.createAdmin(createAdminDto)).rejects.toThrow(error);
     });
   });
 });

@@ -23,6 +23,7 @@ import {
   ApiBody,
   ApiBearerAuth
 } from '@nestjs/swagger';
+import { CreateAdminDto } from './dto/create-admin.dto';
 
 @ApiTags('users')
 @ApiBearerAuth()
@@ -53,6 +54,30 @@ export class UsersController {
   @ApiResponse({ status: 400, description: 'Bad Request.' })
   create(@Body() createUserDto: CreateUserDto) {
     return this.usersService.create(createUserDto);
+  }
+
+  @Post('admin')
+  @ApiOperation({ summary: 'Register a new admin user' })
+  @ApiBody({ type: CreateAdminDto })
+  @ApiResponse({ 
+    status: 201, 
+    description: 'The admin has been successfully created.',
+    schema: {
+      properties: {
+        id: { type: 'string', example: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11' },
+        name: { type: 'string', example: 'Admin User' },
+        email: { type: 'string', example: 'admin@example.com' },
+        role: { type: 'string', example: 'admin' },
+        provider: { type: 'string', example: 'local' },
+        createdAt: { type: 'string', example: '2023-01-01T00:00:00Z' },
+        updatedAt: { type: 'string', example: '2023-01-01T00:00:00Z' }
+      }
+    }
+  })
+  @ApiResponse({ status: 400, description: 'Bad Request.' })
+  @ApiResponse({ status: 401, description: 'Unauthorized - Invalid admin registration key.' })
+  createAdmin(@Body() createAdminDto: CreateAdminDto) {
+    return this.usersService.createAdmin(createAdminDto);
   }
 
   @Get()

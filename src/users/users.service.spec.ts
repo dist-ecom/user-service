@@ -3,7 +3,9 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { UsersService } from './users.service';
 import { User, UserRole, AuthProvider } from './entities/user.entity';
-import { NotFoundException } from '@nestjs/common';
+import { NotFoundException, UnauthorizedException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { CreateAdminDto } from './dto/create-admin.dto';
 
 const mockUser = {
   id: '123e4567-e89b-12d3-a456-426614174000',
@@ -19,9 +21,16 @@ const mockUser = {
   validatePassword: jest.fn().mockResolvedValue(true),
 } as User;
 
+const mockAdmin = {
+  ...mockUser,
+  role: UserRole.ADMIN,
+  email: 'admin@yourdomain.com',
+} as User;
+
 describe('UsersService', () => {
   let service: UsersService;
   let repository: Repository<User>;
+  let configService: ConfigService;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -40,11 +49,27 @@ describe('UsersService', () => {
               .mockImplementation((entity, dto) => ({ ...entity, ...dto })),
           },
         },
+        {
+          provide: ConfigService,
+          useValue: {
+            get: jest.fn((key: string) => {
+              switch (key) {
+                case 'ADMIN_REGISTRATION_KEY':
+                  return 'test-admin-key';
+                case 'ADMIN_ALLOWED_DOMAINS':
+                  return 'yourdomain.com,admin.domain.com';
+                default:
+                  return null;
+              }
+            }),
+          },
+        },
       ],
     }).compile();
 
     service = module.get<UsersService>(UsersService);
     repository = module.get<Repository<User>>(getRepositoryToken(User));
+    configService = module.get<ConfigService>(ConfigService);
   });
 
   it('should be defined', () => {
@@ -203,6 +228,87 @@ describe('UsersService', () => {
         'google123',
       );
 
+      expect(repository.save).toHaveBeenCalled();
+    });
+  });
+
+  describe('createAdmin', () => {
+    const createAdminDto: CreateAdminDto = {
+      name: 'Admin User',
+      email: 'admin@yourdomain.com',
+      password: 'StrongP@ss123',
+      adminSecretKey: 'test-admin-key',
+      provider: AuthProvider.LOCAL,
+    };
+
+    it('should create a new admin user with valid credentials', async () => {
+      jest.spyOn(repository, 'findOne').mockResolvedValueOnce(null);
+      jest.spyOn(repository, 'create').mockReturnValueOnce(mockAdmin);
+      jest.spyOn(repository, 'save').mockResolvedValueOnce(mockAdmin);
+
+      const result = await service.createAdmin(createAdminDto);
+
+      expect(result).toEqual(mockAdmin);
+      expect(result.role).toBe(UserRole.ADMIN);
+      expect(repository.create).toHaveBeenCalledWith({
+        ...createAdminDto,
+        role: UserRole.ADMIN,
+      });
+      expect(repository.save).toHaveBeenCalled();
+    });
+
+    it('should throw UnauthorizedException with invalid admin key', async () => {
+      const invalidDto = {
+        ...createAdminDto,
+        adminSecretKey: 'wrong-key',
+      };
+
+      await expect(service.createAdmin(invalidDto)).rejects.toThrow(
+        UnauthorizedException,
+      );
+      expect(repository.create).not.toHaveBeenCalled();
+    });
+
+    it('should throw UnauthorizedException with disallowed email domain', async () => {
+      const invalidDomainDto = {
+        ...createAdminDto,
+        email: 'admin@disallowed.com',
+      };
+
+      await expect(service.createAdmin(invalidDomainDto)).rejects.toThrow(
+        UnauthorizedException,
+      );
+      expect(repository.create).not.toHaveBeenCalled();
+    });
+
+    it('should throw UnauthorizedException if admin email already exists', async () => {
+      jest.spyOn(repository, 'findOne').mockResolvedValueOnce(mockAdmin);
+
+      await expect(service.createAdmin(createAdminDto)).rejects.toThrow(
+        UnauthorizedException,
+      );
+      expect(repository.create).not.toHaveBeenCalled();
+    });
+
+    it('should handle empty allowed domains list', async () => {
+      jest.spyOn(configService, 'get').mockImplementation((key: string) => {
+        if (key === 'ADMIN_ALLOWED_DOMAINS') return '';
+        if (key === 'ADMIN_REGISTRATION_KEY') return 'test-admin-key';
+        return null;
+      });
+
+      jest.spyOn(repository, 'findOne').mockResolvedValueOnce(null);
+      jest.spyOn(repository, 'create').mockReturnValueOnce(mockAdmin);
+      jest.spyOn(repository, 'save').mockResolvedValueOnce(mockAdmin);
+
+      const result = await service.createAdmin(createAdminDto);
+
+      expect(result).toEqual(mockAdmin);
+      expect(result.role).toBe(UserRole.ADMIN);
+      expect(repository.create).toHaveBeenCalledWith({
+        ...createAdminDto,
+        role: UserRole.ADMIN,
+      });
       expect(repository.save).toHaveBeenCalled();
     });
   });
