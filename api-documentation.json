@@ -1,0 +1,444 @@
+{
+  "name": "User Service API",
+  "version": "1.0.0",
+  "description": "API documentation for the ecommerce platform user service",
+  "baseUrl": "http://localhost:3000",
+  "endpoints": {
+    "auth": {
+      "register": {
+        "path": "/auth/register",
+        "method": "POST",
+        "description": "Register a new user",
+        "authentication": "None",
+        "request": {
+          "contentType": "application/json",
+          "body": {
+            "name": "string",
+            "email": "string",
+            "password": "string"
+          }
+        },
+        "response": {
+          "success": {
+            "statusCode": 201,
+            "body": {
+              "user": {
+                "id": "string",
+                "email": "string",
+                "name": "string",
+                "role": "user"
+              },
+              "access_token": "string"
+            }
+          },
+          "error": {
+            "statusCode": 400,
+            "body": {
+              "message": "Bad request",
+              "error": "Bad Request"
+            }
+          }
+        }
+      },
+      "login": {
+        "path": "/auth/login",
+        "method": "POST",
+        "description": "Log in with email and password",
+        "authentication": "None",
+        "request": {
+          "contentType": "application/json",
+          "body": {
+            "email": "string",
+            "password": "string"
+          }
+        },
+        "response": {
+          "success": {
+            "statusCode": 200,
+            "body": {
+              "user": {
+                "id": "string",
+                "email": "string",
+                "name": "string",
+                "role": "string"
+              },
+              "access_token": "string"
+            }
+          },
+          "error": {
+            "statusCode": 401,
+            "body": {
+              "message": "Invalid credentials",
+              "error": "Unauthorized"
+            }
+          }
+        }
+      },
+      "googleAuth": {
+        "path": "/auth/google",
+        "method": "GET",
+        "description": "Initiate Google OAuth login flow",
+        "authentication": "None",
+        "response": {
+          "success": {
+            "statusCode": 302,
+            "description": "Redirect to Google authentication"
+          }
+        }
+      },
+      "googleCallback": {
+        "path": "/auth/google/callback",
+        "method": "GET",
+        "description": "Handle Google OAuth callback",
+        "authentication": "None",
+        "response": {
+          "success": {
+            "statusCode": 200,
+            "body": {
+              "user": {
+                "id": "string",
+                "email": "string",
+                "name": "string",
+                "role": "string"
+              },
+              "access_token": "string"
+            }
+          }
+        }
+      },
+      "profile": {
+        "path": "/auth/profile",
+        "method": "GET",
+        "description": "Get the current user profile",
+        "authentication": "JWT",
+        "headers": {
+          "Authorization": "Bearer {token}"
+        },
+        "response": {
+          "success": {
+            "statusCode": 200,
+            "body": {
+              "id": "string",
+              "email": "string",
+              "name": "string",
+              "role": "string",
+              "provider": "string",
+              "providerId": "string",
+              "createdAt": "string",
+              "updatedAt": "string"
+            }
+          },
+          "error": {
+            "statusCode": 401,
+            "body": {
+              "message": "Unauthorized",
+              "error": "Unauthorized"
+            }
+          }
+        }
+      }
+    },
+    "users": {
+      "create": {
+        "path": "/users",
+        "method": "POST",
+        "description": "Create a new user",
+        "authentication": "JWT",
+        "headers": {
+          "Authorization": "Bearer {token}"
+        },
+        "request": {
+          "contentType": "application/json",
+          "body": {
+            "name": "string",
+            "email": "string",
+            "password": "string",
+            "role": "string",
+            "provider": "string",
+            "providerId": "string"
+          }
+        },
+        "response": {
+          "success": {
+            "statusCode": 201,
+            "body": {
+              "id": "string",
+              "name": "string",
+              "email": "string",
+              "role": "string",
+              "provider": "string",
+              "providerId": "string",
+              "createdAt": "string",
+              "updatedAt": "string"
+            }
+          },
+          "error": {
+            "statusCode": 400,
+            "body": {
+              "message": "Bad request",
+              "error": "Bad Request"
+            }
+          }
+        }
+      },
+      "createAdmin": {
+        "path": "/users/admin",
+        "method": "POST",
+        "description": "Register a new admin user",
+        "authentication": "JWT",
+        "headers": {
+          "Authorization": "Bearer {token}"
+        },
+        "request": {
+          "contentType": "application/json",
+          "body": {
+            "name": "string",
+            "email": "string",
+            "password": "string",
+            "adminSecretKey": "string",
+            "provider": "string"
+          }
+        },
+        "response": {
+          "success": {
+            "statusCode": 201,
+            "body": {
+              "id": "string",
+              "name": "string",
+              "email": "string",
+              "role": "admin",
+              "provider": "string",
+              "providerId": "string",
+              "createdAt": "string",
+              "updatedAt": "string"
+            }
+          },
+          "error": {
+            "statusCode": 401,
+            "body": {
+              "message": "Invalid admin registration key",
+              "error": "Unauthorized"
+            }
+          }
+        }
+      },
+      "findAll": {
+        "path": "/users",
+        "method": "GET",
+        "description": "Get all users (admin only)",
+        "authentication": "JWT + Admin Role",
+        "headers": {
+          "Authorization": "Bearer {token}"
+        },
+        "response": {
+          "success": {
+            "statusCode": 200,
+            "body": [
+              {
+                "id": "string",
+                "name": "string",
+                "email": "string",
+                "role": "string",
+                "provider": "string",
+                "providerId": "string",
+                "createdAt": "string",
+                "updatedAt": "string"
+              }
+            ]
+          },
+          "error": {
+            "statusCode": 403,
+            "body": {
+              "message": "Forbidden",
+              "error": "Forbidden"
+            }
+          }
+        }
+      },
+      "findOne": {
+        "path": "/users/{id}",
+        "method": "GET",
+        "description": "Get a user by ID",
+        "authentication": "JWT",
+        "headers": {
+          "Authorization": "Bearer {token}"
+        },
+        "parameters": {
+          "id": {
+            "type": "string",
+            "description": "User ID",
+            "required": true
+          }
+        },
+        "response": {
+          "success": {
+            "statusCode": 200,
+            "body": {
+              "id": "string",
+              "name": "string",
+              "email": "string",
+              "role": "string",
+              "provider": "string",
+              "providerId": "string",
+              "createdAt": "string",
+              "updatedAt": "string"
+            }
+          },
+          "error": {
+            "statusCode": 404,
+            "body": {
+              "message": "User with ID {id} not found",
+              "error": "Not Found"
+            }
+          }
+        }
+      },
+      "update": {
+        "path": "/users/{id}",
+        "method": "PATCH",
+        "description": "Update a user",
+        "authentication": "JWT",
+        "headers": {
+          "Authorization": "Bearer {token}"
+        },
+        "parameters": {
+          "id": {
+            "type": "string",
+            "description": "User ID",
+            "required": true
+          }
+        },
+        "request": {
+          "contentType": "application/json",
+          "body": {
+            "name": "string",
+            "email": "string",
+            "password": "string",
+            "role": "string"
+          }
+        },
+        "response": {
+          "success": {
+            "statusCode": 200,
+            "body": {
+              "id": "string",
+              "name": "string",
+              "email": "string",
+              "role": "string",
+              "provider": "string",
+              "providerId": "string",
+              "createdAt": "string",
+              "updatedAt": "string"
+            }
+          },
+          "error": {
+            "statusCode": 400,
+            "body": {
+              "message": "Bad request",
+              "error": "Bad Request"
+            }
+          },
+          "notFound": {
+            "statusCode": 404,
+            "body": {
+              "message": "User with ID {id} not found",
+              "error": "Not Found"
+            }
+          }
+        }
+      },
+      "remove": {
+        "path": "/users/{id}",
+        "method": "DELETE",
+        "description": "Delete a user (admin only)",
+        "authentication": "JWT + Admin Role",
+        "headers": {
+          "Authorization": "Bearer {token}"
+        },
+        "parameters": {
+          "id": {
+            "type": "string",
+            "description": "User ID",
+            "required": true
+          }
+        },
+        "response": {
+          "success": {
+            "statusCode": 200,
+            "body": {}
+          },
+          "error": {
+            "statusCode": 403,
+            "body": {
+              "message": "Forbidden",
+              "error": "Forbidden"
+            }
+          },
+          "notFound": {
+            "statusCode": 404,
+            "body": {
+              "message": "User with ID {id} not found",
+              "error": "Not Found"
+            }
+          }
+        }
+      }
+    }
+  },
+  "authentication": {
+    "jwt": {
+      "type": "Bearer",
+      "description": "JWT token obtained from login or register endpoints",
+      "header": "Authorization: Bearer {token}"
+    },
+    "roles": {
+      "user": "Regular user with limited permissions",
+      "admin": "Administrator with full access"
+    }
+  },
+  "dataModels": {
+    "User": {
+      "id": "string (UUID)",
+      "name": "string",
+      "email": "string",
+      "password": "string (hashed)",
+      "role": "enum (user, admin)",
+      "provider": "enum (local, google)",
+      "providerId": "string",
+      "createdAt": "Date",
+      "updatedAt": "Date"
+    },
+    "CreateUserDto": {
+      "name": "string",
+      "email": "string",
+      "password": "string",
+      "role": "enum (user, admin)",
+      "provider": "enum (local, google)",
+      "providerId": "string"
+    },
+    "UpdateUserDto": {
+      "name": "string",
+      "email": "string",
+      "password": "string",
+      "role": "enum (user, admin)"
+    },
+    "CreateAdminDto": {
+      "name": "string",
+      "email": "string",
+      "password": "string",
+      "adminSecretKey": "string",
+      "provider": "enum (local, google)"
+    }
+  },
+  "errorCodes": {
+    "400": "Bad Request - Invalid input data",
+    "401": "Unauthorized - Invalid credentials or token",
+    "403": "Forbidden - Insufficient permissions",
+    "404": "Not Found - Resource not found",
+    "500": "Internal Server Error - Server-side error"
+  },
+  "swagger": {
+    "url": "/api",
+    "description": "Interactive API documentation using Swagger UI"
+  }
+} 
