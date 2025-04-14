@@ -25,12 +25,7 @@ The JWT token contains three parts:
 
 ### How It Works
 
-1. The user logs in with credentials or OAuth
-2. The server validates the credentials
-3. If valid, the server generates a JWT token with the user's information
-4. The token is returned to the client
-5. For subsequent requests, the client includes the token in the Authorization header
-6. The server validates the token for each request to protected endpoints
+![JWT Authentication Flow](diagrams/auth-seq.svg)
 
 ### Token Lifetime
 
@@ -42,18 +37,11 @@ Local authentication refers to the username/password authentication flow.
 
 ### Registration Flow
 
-1. User submits registration information (name, email, password)
-2. Server validates the input
-3. Password is hashed using bcrypt
-4. User record is created in the database
-5. JWT token is generated and returned
+![Registration Flow](diagrams/auth-seq-2.svg)
 
 ### Login Flow
 
-1. User submits email and password
-2. Server looks up the user by email
-3. If found, server compares the hashed password with the provided password
-4. If matched, JWT token is generated and returned
+![Login Flow](diagrams/auth-seq-3.svg)
 
 ### Password Handling
 
@@ -67,13 +55,7 @@ The User Service supports authentication via Google OAuth 2.0.
 
 ### OAuth Flow
 
-1. User initiates authentication by accessing `/auth/google`
-2. User is redirected to Google's authentication page
-3. User logs in with Google credentials and authorizes the application
-4. Google redirects back to `/auth/google/callback` with an authorization code
-5. Server exchanges the code for user information from Google
-6. Server creates or updates the user record with information from Google
-7. JWT token is generated and returned
+![OAuth Flow](diagrams/auth-seq-4.svg)
 
 ### User Mapping
 
@@ -89,12 +71,11 @@ The User Service implements role-based access control to protect certain endpoin
 
 ### User Roles
 
-The system supports the following roles:
-
-- **User**: Regular user with access to their own data
-- **Admin**: Administrative user with access to all data and actions
+![User Roles](diagrams/auth-flowchart.svg)
 
 ### Role Authorization
+
+![Role Authorization](diagrams/auth-flowchart-2.svg)
 
 Role-based authorization is implemented using guards:
 
@@ -178,8 +159,10 @@ The system implements email verification to ensure users have access to the emai
 
 ### Verification Process
 
+![Email Verification Process](diagrams/auth-flowchart.svg)
+
 1. When a user registers (or a merchant account is created), the system:
-   - Creates the user account with `isEmailVerified` set to `false`
+   - Creates the user account with `isVerified` set to `false`
    - Generates a unique verification token and stores it with an expiration time
    - Sends a verification email to the user's email address
 
@@ -190,7 +173,7 @@ The system implements email verification to ensure users have access to the emai
 
 3. When the user clicks the link, the system:
    - Validates the token and checks if it's still valid
-   - Updates the user's account, setting `isEmailVerified` to `true`
+   - Updates the user's account, setting `isVerified` to `true`
    - Invalidates the verification token
 
 4. If the token is expired or invalid, the user can request a new verification email through the application.
@@ -206,6 +189,8 @@ The system implements email verification to ensure users have access to the emai
   - Verifies the user's email using the provided token
 
 ### Merchant Verification
+
+![Merchant Verification Process](diagrams/state-diagram.svg)
 
 Merchant accounts require additional verification:
 

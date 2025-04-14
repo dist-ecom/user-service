@@ -1,787 +1,1037 @@
 {
-  "name": "User Service API",
-  "version": "1.0.0",
-  "description": "API documentation for the ecommerce platform user service",
-  "baseUrl": "http://localhost:3000",
-  "rateLimiting": {
-    "windowMs": 900000,
-    "max": 100,
-    "message": "Too many requests, please try again later"
-  },
-  "endpoints": {
-    "auth": {
-      "register": {
-        "path": "/auth/register",
-        "method": "POST",
-        "description": "Register a new user",
-        "authentication": "None",
-        "request": {
-          "contentType": "application/json",
-          "body": {
-            "name": "string",
-            "email": "string",
-            "password": "string"
+  "openapi": "3.0.0",
+  "paths": {
+    "/": {
+      "get": {
+        "operationId": "AppController_getHello",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
           }
         },
-        "response": {
-          "success": {
-            "statusCode": 201,
-            "body": {
-              "user": {
-                "id": "string",
-                "email": "string",
-                "name": "string",
-                "role": "user"
-              },
-              "access_token": "string"
+        "tags": [
+          "App"
+        ]
+      }
+    },
+    "/users": {
+      "post": {
+        "operationId": "UsersController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateUserDto"
+              }
             }
-          },
-          "error": {
-            "statusCode": 400,
-            "body": {
-              "message": "Bad request",
-              "error": "Bad Request"
-            }
-          }
-        }
-      },
-      "login": {
-        "path": "/auth/login",
-        "method": "POST",
-        "description": "Log in with email and password",
-        "authentication": "None",
-        "request": {
-          "contentType": "application/json",
-          "body": {
-            "email": "string",
-            "password": "string"
           }
         },
-        "response": {
-          "success": {
-            "statusCode": 200,
-            "body": {
-              "user": {
-                "id": "string",
-                "email": "string",
-                "name": "string",
-                "role": "string"
-              },
-              "access_token": "string"
+        "responses": {
+          "201": {
+            "description": "The user has been successfully created.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "example": "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11"
+                    },
+                    "name": {
+                      "type": "string",
+                      "example": "John Doe"
+                    },
+                    "email": {
+                      "type": "string",
+                      "example": "john@example.com"
+                    },
+                    "role": {
+                      "type": "string",
+                      "example": "user"
+                    },
+                    "provider": {
+                      "type": "string",
+                      "example": "local"
+                    },
+                    "providerId": {
+                      "type": "string",
+                      "example": null
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "example": "2023-01-01T00:00:00Z"
+                    },
+                    "updatedAt": {
+                      "type": "string",
+                      "example": "2023-01-01T00:00:00Z"
+                    }
+                  }
+                }
+              }
             }
           },
-          "error": {
-            "statusCode": 401,
-            "body": {
-              "message": "Invalid credentials",
-              "error": "Unauthorized"
+          "400": {
+            "description": "Bad Request."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create a new user",
+        "tags": [
+          "users"
+        ]
+      },
+      "get": {
+        "operationId": "UsersController_findAll",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Returns an array of all users.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "name": {
+                        "type": "string"
+                      },
+                      "email": {
+                        "type": "string"
+                      },
+                      "role": {
+                        "type": "string"
+                      },
+                      "provider": {
+                        "type": "string"
+                      },
+                      "providerId": {
+                        "type": "string"
+                      },
+                      "createdAt": {
+                        "type": "string"
+                      },
+                      "updatedAt": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get all users (admin only)",
+        "tags": [
+          "users"
+        ]
+      }
+    },
+    "/users/admin": {
+      "post": {
+        "operationId": "UsersController_createAdmin",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAdminDto"
+              }
             }
           }
-        }
+        },
+        "responses": {
+          "201": {
+            "description": "The admin has been successfully created.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "example": "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11"
+                    },
+                    "name": {
+                      "type": "string",
+                      "example": "Admin User"
+                    },
+                    "email": {
+                      "type": "string",
+                      "example": "admin@example.com"
+                    },
+                    "role": {
+                      "type": "string",
+                      "example": "admin"
+                    },
+                    "provider": {
+                      "type": "string",
+                      "example": "local"
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "example": "2023-01-01T00:00:00Z"
+                    },
+                    "updatedAt": {
+                      "type": "string",
+                      "example": "2023-01-01T00:00:00Z"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request."
+          },
+          "401": {
+            "description": "Unauthorized - Invalid admin registration key."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Register a new admin user",
+        "tags": [
+          "users"
+        ]
+      }
+    },
+    "/users/merchant": {
+      "post": {
+        "operationId": "UsersController_createMerchant",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateMerchantDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The merchant has been successfully created.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "example": "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11"
+                    },
+                    "name": {
+                      "type": "string",
+                      "example": "Merchant Store"
+                    },
+                    "email": {
+                      "type": "string",
+                      "example": "merchant@example.com"
+                    },
+                    "role": {
+                      "type": "string",
+                      "example": "merchant"
+                    },
+                    "provider": {
+                      "type": "string",
+                      "example": "local"
+                    },
+                    "isVerified": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "example": "2023-01-01T00:00:00Z"
+                    },
+                    "updatedAt": {
+                      "type": "string",
+                      "example": "2023-01-01T00:00:00Z"
+                    },
+                    "merchantProfile": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "example": "b1eebc99-9c0b-4ef8-bb6d-6bb9bd380a22"
+                        },
+                        "storeName": {
+                          "type": "string",
+                          "example": "My Awesome Store"
+                        },
+                        "location": {
+                          "type": "string",
+                          "example": "123 Main St, City, Country"
+                        },
+                        "storeNumber": {
+                          "type": "string",
+                          "example": "A-123"
+                        },
+                        "phoneNumber": {
+                          "type": "string",
+                          "example": "+1-555-123-4567"
+                        },
+                        "description": {
+                          "type": "string",
+                          "example": "We sell high-quality products"
+                        },
+                        "createdAt": {
+                          "type": "string",
+                          "example": "2023-01-01T00:00:00Z"
+                        },
+                        "updatedAt": {
+                          "type": "string",
+                          "example": "2023-01-01T00:00:00Z"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Register a new merchant",
+        "tags": [
+          "users"
+        ]
+      }
+    },
+    "/users/{id}": {
+      "get": {
+        "operationId": "UsersController_findOne",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "User ID",
+            "schema": {
+              "example": "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Returns the user with the specified ID.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "email": {
+                      "type": "string"
+                    },
+                    "role": {
+                      "type": "string"
+                    },
+                    "provider": {
+                      "type": "string"
+                    },
+                    "providerId": {
+                      "type": "string"
+                    },
+                    "isVerified": {
+                      "type": "boolean"
+                    },
+                    "createdAt": {
+                      "type": "string"
+                    },
+                    "updatedAt": {
+                      "type": "string"
+                    },
+                    "merchantProfile": {
+                      "type": "object",
+                      "nullable": true,
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "storeName": {
+                          "type": "string"
+                        },
+                        "location": {
+                          "type": "string"
+                        },
+                        "storeNumber": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "phoneNumber": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "description": {
+                          "type": "string",
+                          "nullable": true
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "User not found."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get a user by ID",
+        "tags": [
+          "users"
+        ]
       },
-      "googleAuth": {
-        "path": "/auth/google",
-        "method": "GET",
-        "description": "Initiate Google OAuth login flow",
-        "authentication": "None",
-        "response": {
-          "success": {
-            "statusCode": 302,
+      "patch": {
+        "operationId": "UsersController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "User ID",
+            "schema": {
+              "example": "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateUserDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The user has been successfully updated."
+          },
+          "400": {
+            "description": "Bad Request."
+          },
+          "404": {
+            "description": "User not found."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Update a user",
+        "tags": [
+          "users"
+        ]
+      },
+      "delete": {
+        "operationId": "UsersController_remove",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "User ID",
+            "schema": {
+              "example": "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The user has been successfully deleted."
+          },
+          "403": {
+            "description": "Forbidden."
+          },
+          "404": {
+            "description": "User not found."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Delete a user (admin only)",
+        "tags": [
+          "users"
+        ]
+      }
+    },
+    "/users/{id}/verify": {
+      "patch": {
+        "operationId": "UsersController_verifyUser",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "User ID to verify",
+            "schema": {
+              "example": "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The user has been successfully verified."
+          },
+          "403": {
+            "description": "Forbidden."
+          },
+          "404": {
+            "description": "User not found."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Verify a user (admin only)",
+        "tags": [
+          "users"
+        ]
+      }
+    },
+    "/users/verification/status/{id}": {
+      "get": {
+        "operationId": "UsersController_checkVerificationStatus",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "User ID",
+            "schema": {
+              "example": "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Returns whether the user meets verification requirements",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "isVerified": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "User not found."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Check user verification status",
+        "tags": [
+          "users"
+        ]
+      }
+    },
+    "/auth/register": {
+      "post": {
+        "operationId": "AuthController_register",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateUserDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "User registration successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "user": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "email": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "role": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "access_token": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          }
+        },
+        "summary": "Register a new user",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "operationId": "AuthController_login",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "example": "user@example.com"
+                  },
+                  "password": {
+                    "type": "string",
+                    "example": "password123"
+                  }
+                },
+                "required": [
+                  "email",
+                  "password"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Login successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "user": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "email": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "role": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "access_token": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        },
+        "summary": "Log in with email and password",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/auth/google": {
+      "get": {
+        "operationId": "AuthController_googleAuth",
+        "parameters": [],
+        "responses": {
+          "302": {
             "description": "Redirect to Google authentication"
           }
-        }
-      },
-      "googleCallback": {
-        "path": "/auth/google/callback",
-        "method": "GET",
-        "description": "Handle Google OAuth callback",
-        "authentication": "None",
-        "response": {
-          "success": {
-            "statusCode": 200,
-            "body": {
-              "user": {
-                "id": "string",
-                "email": "string",
-                "name": "string",
-                "role": "string"
-              },
-              "access_token": "string"
-            }
-          }
-        }
-      },
-      "profile": {
-        "path": "/auth/profile",
-        "method": "GET",
-        "description": "Get the current user profile",
-        "authentication": "JWT",
-        "headers": {
-          "Authorization": "Bearer {token}"
         },
-        "response": {
-          "success": {
-            "statusCode": 200,
-            "body": {
-              "id": "string",
-              "email": "string",
-              "name": "string",
-              "role": "string",
-              "provider": "string",
-              "providerId": "string",
-              "createdAt": "string",
-              "updatedAt": "string"
-            }
-          },
-          "error": {
-            "statusCode": 401,
-            "body": {
-              "message": "Unauthorized",
-              "error": "Unauthorized"
-            }
-          }
-        }
-      },
-      "verifyEmail": {
-        "path": "/auth/verify-email",
-        "method": "GET",
-        "description": "Verify user email with token",
-        "authentication": "None",
-        "queryParameters": {
-          "token": {
-            "type": "string",
-            "description": "Email verification token",
-            "required": true
-          }
-        },
-        "response": {
-          "success": {
-            "statusCode": 200,
-            "body": {
-              "message": "Email verified successfully"
-            }
-          },
-          "error": {
-            "statusCode": 400,
-            "body": {
-              "message": "Invalid or expired token",
-              "error": "Bad Request"
-            }
-          }
-        }
-      },
-      "sendVerificationEmail": {
-        "path": "/auth/verify-email/send",
-        "method": "POST",
-        "description": "Send email verification link",
-        "authentication": "JWT",
-        "headers": {
-          "Authorization": "Bearer {token}"
-        },
-        "request": {
-          "contentType": "application/json",
-          "body": {
-            "email": "string"
-          }
-        },
-        "response": {
-          "success": {
-            "statusCode": 200,
-            "body": {
-              "message": "Verification email sent"
-            }
-          },
-          "error": {
-            "statusCode": 400,
-            "body": {
-              "message": "User not found",
-              "error": "Bad Request"
-            }
-          }
-        }
+        "summary": "Initiate Google OAuth login flow",
+        "tags": [
+          "auth"
+        ]
       }
     },
-    "users": {
-      "create": {
-        "path": "/users",
-        "method": "POST",
-        "description": "Create a new user",
-        "authentication": "JWT",
-        "headers": {
-          "Authorization": "Bearer {token}"
-        },
-        "request": {
-          "contentType": "application/json",
-          "body": {
-            "name": "string",
-            "email": "string",
-            "password": "string",
-            "role": "string",
-            "provider": "string",
-            "providerId": "string"
-          }
-        },
-        "response": {
-          "success": {
-            "statusCode": 201,
-            "body": {
-              "id": "string",
-              "name": "string",
-              "email": "string",
-              "role": "string",
-              "provider": "string",
-              "providerId": "string",
-              "createdAt": "string",
-              "updatedAt": "string"
-            }
+    "/auth/profile": {
+      "get": {
+        "operationId": "AuthController_getProfile",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Returns the authenticated user profile"
           },
-          "error": {
-            "statusCode": 400,
-            "body": {
-              "message": "Bad request",
-              "error": "Bad Request"
-            }
-          }
-        }
-      },
-      "createAdmin": {
-        "path": "/users/admin",
-        "method": "POST",
-        "description": "Register a new admin user",
-        "authentication": "JWT",
-        "headers": {
-          "Authorization": "Bearer {token}"
-        },
-        "request": {
-          "contentType": "application/json",
-          "body": {
-            "name": "string",
-            "email": "string",
-            "password": "string",
-            "adminSecretKey": "string",
-            "provider": "string"
+          "401": {
+            "description": "Unauthorized"
           }
         },
-        "response": {
-          "success": {
-            "statusCode": 201,
-            "body": {
-              "id": "string",
-              "name": "string",
-              "email": "string",
-              "role": "admin",
-              "provider": "string",
-              "providerId": "string",
-              "createdAt": "string",
-              "updatedAt": "string"
-            }
-          },
-          "error": {
-            "statusCode": 401,
-            "body": {
-              "message": "Invalid admin registration key",
-              "error": "Unauthorized"
-            }
+        "security": [
+          {
+            "bearer": []
           }
-        }
-      },
-      "findAll": {
-        "path": "/users",
-        "method": "GET",
-        "description": "Get all users (admin only)",
-        "authentication": "JWT + Admin Role",
-        "headers": {
-          "Authorization": "Bearer {token}"
-        },
-        "queryParameters": {
-          "page": {
-            "type": "number",
-            "description": "Page number (default: 1)",
-            "required": false
-          },
-          "limit": {
-            "type": "number",
-            "description": "Number of items per page (default: 10)",
-            "required": false
-          },
-          "sort": {
-            "type": "string",
-            "description": "Sort field (default: createdAt)",
-            "required": false
-          },
-          "order": {
-            "type": "string",
-            "description": "Sort order (asc/desc, default: desc)",
-            "required": false
-          }
-        },
-        "response": {
-          "success": {
-            "statusCode": 200,
-            "body": {
-              "data": [
-                {
-                  "id": "string",
-                  "name": "string",
-                  "email": "string",
-                  "role": "string",
-                  "provider": "string",
-                  "providerId": "string",
-                  "createdAt": "string",
-                  "updatedAt": "string"
-                }
-              ],
-              "meta": {
-                "total": "number",
-                "page": "number",
-                "limit": "number",
-                "totalPages": "number"
-              }
-            }
-          },
-          "error": {
-            "statusCode": 403,
-            "body": {
-              "message": "Forbidden",
-              "error": "Forbidden"
-            }
-          }
-        }
-      },
-      "findOne": {
-        "path": "/users/{id}",
-        "method": "GET",
-        "description": "Get a user by ID",
-        "authentication": "JWT",
-        "headers": {
-          "Authorization": "Bearer {token}"
-        },
-        "parameters": {
-          "id": {
-            "type": "string",
-            "description": "User ID",
-            "required": true
-          }
-        },
-        "response": {
-          "success": {
-            "statusCode": 200,
-            "body": {
-              "id": "string",
-              "name": "string",
-              "email": "string",
-              "role": "string",
-              "provider": "string",
-              "providerId": "string",
-              "createdAt": "string",
-              "updatedAt": "string"
-            }
-          },
-          "error": {
-            "statusCode": 404,
-            "body": {
-              "message": "User with ID {id} not found",
-              "error": "Not Found"
-            }
-          }
-        }
-      },
-      "update": {
-        "path": "/users/{id}",
-        "method": "PATCH",
-        "description": "Update a user",
-        "authentication": "JWT",
-        "headers": {
-          "Authorization": "Bearer {token}"
-        },
-        "parameters": {
-          "id": {
-            "type": "string",
-            "description": "User ID",
-            "required": true
-          }
-        },
-        "request": {
-          "contentType": "application/json",
-          "body": {
-            "name": "string",
-            "email": "string",
-            "password": "string",
-            "role": "string"
-          }
-        },
-        "response": {
-          "success": {
-            "statusCode": 200,
-            "body": {
-              "id": "string",
-              "name": "string",
-              "email": "string",
-              "role": "string",
-              "provider": "string",
-              "providerId": "string",
-              "createdAt": "string",
-              "updatedAt": "string"
-            }
-          },
-          "error": {
-            "statusCode": 400,
-            "body": {
-              "message": "Bad request",
-              "error": "Bad Request"
-            }
-          },
-          "notFound": {
-            "statusCode": 404,
-            "body": {
-              "message": "User with ID {id} not found",
-              "error": "Not Found"
-            }
-          }
-        }
-      },
-      "remove": {
-        "path": "/users/{id}",
-        "method": "DELETE",
-        "description": "Delete a user (admin only)",
-        "authentication": "JWT + Admin Role",
-        "headers": {
-          "Authorization": "Bearer {token}"
-        },
-        "parameters": {
-          "id": {
-            "type": "string",
-            "description": "User ID",
-            "required": true
-          }
-        },
-        "response": {
-          "success": {
-            "statusCode": 200,
-            "body": {}
-          },
-          "error": {
-            "statusCode": 403,
-            "body": {
-              "message": "Forbidden",
-              "error": "Forbidden"
-            }
-          },
-          "notFound": {
-            "statusCode": 404,
-            "body": {
-              "message": "User with ID {id} not found",
-              "error": "Not Found"
-            }
-          }
-        }
-      },
-      "merchants": {
-        "create": {
-          "path": "/users/merchants",
-          "method": "POST",
-          "description": "Register a new merchant",
-          "authentication": "None",
-          "request": {
-            "contentType": "application/json",
-            "body": {
-              "name": "string",
-              "email": "string",
-              "password": "string",
-              "storeName": "string",
-              "location": "string",
-              "storeNumber": "string",
-              "phoneNumber": "string",
-              "description": "string"
-            }
-          },
-          "response": {
-            "success": {
-              "statusCode": 201,
-              "body": {
-                "user": {
-                  "id": "string",
-                  "name": "string",
-                  "email": "string",
-                  "role": "merchant",
-                  "isVerified": false,
-                  "isEmailVerified": false,
-                  "merchantProfile": {
-                    "id": "string",
-                    "storeName": "string",
-                    "location": "string",
-                    "storeNumber": "string",
-                    "phoneNumber": "string",
-                    "description": "string"
+        ],
+        "summary": "Get the current user profile",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/auth/verify-email/send": {
+      "post": {
+        "operationId": "AuthController_sendVerificationEmail",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "example": "user@example.com"
                   }
                 }
               }
-            },
-            "error": {
-              "statusCode": 400,
-              "body": {
-                "message": "Bad request",
-                "error": "Bad Request"
-              }
             }
           }
         },
-        "findOne": {
-          "path": "/users/merchants/{id}",
-          "method": "GET",
-          "description": "Get merchant profile by ID",
-          "authentication": "JWT",
-          "headers": {
-            "Authorization": "Bearer {token}"
+        "responses": {
+          "200": {
+            "description": "Verification email sent successfully"
           },
-          "parameters": {
-            "id": {
-              "type": "string",
-              "description": "Merchant ID",
-              "required": true
-            }
+          "401": {
+            "description": "Unauthorized"
           },
-          "response": {
-            "success": {
-              "statusCode": 200,
-              "body": {
-                "id": "string",
-                "name": "string",
-                "email": "string",
-                "role": "merchant",
-                "isVerified": "boolean",
-                "isEmailVerified": "boolean",
-                "merchantProfile": {
-                  "id": "string",
-                  "storeName": "string",
-                  "location": "string",
-                  "storeNumber": "string",
-                  "phoneNumber": "string",
-                  "description": "string"
-                }
-              }
-            },
-            "error": {
-              "statusCode": 404,
-              "body": {
-                "message": "Merchant not found",
-                "error": "Not Found"
-              }
-            }
+          "404": {
+            "description": "User not found"
           }
         },
-        "verify": {
-          "path": "/users/merchants/{id}/verify",
-          "method": "PATCH",
-          "description": "Verify a merchant account (admin only)",
-          "authentication": "JWT + Admin Role",
-          "headers": {
-            "Authorization": "Bearer {token}"
-          },
-          "parameters": {
-            "id": {
-              "type": "string",
-              "description": "Merchant ID",
-              "required": true
-            }
-          },
-          "response": {
-            "success": {
-              "statusCode": 200,
-              "body": {
-                "id": "string",
-                "isVerified": true
-              }
-            },
-            "error": {
-              "statusCode": 403,
-              "body": {
-                "message": "Forbidden",
-                "error": "Forbidden"
-              }
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Send a verification email to the user",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/auth/verify-email": {
+      "get": {
+        "operationId": "AuthController_verifyEmail",
+        "parameters": [
+          {
+            "name": "token",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
             }
           }
-        },
-        "update": {
-          "path": "/users/merchants/{id}",
-          "method": "PATCH",
-          "description": "Update merchant profile",
-          "authentication": "JWT",
-          "headers": {
-            "Authorization": "Bearer {token}"
+        ],
+        "responses": {
+          "200": {
+            "description": "Email verified successfully"
           },
-          "parameters": {
-            "id": {
-              "type": "string",
-              "description": "Merchant ID",
-              "required": true
-            }
-          },
-          "request": {
-            "contentType": "application/json",
-            "body": {
-              "storeName": "string",
-              "location": "string",
-              "storeNumber": "string",
-              "phoneNumber": "string",
-              "description": "string"
-            }
-          },
-          "response": {
-            "success": {
-              "statusCode": 200,
-              "body": {
-                "id": "string",
-                "merchantProfile": {
-                  "id": "string",
-                  "storeName": "string",
-                  "location": "string",
-                  "storeNumber": "string",
-                  "phoneNumber": "string",
-                  "description": "string"
-                }
-              }
-            },
-            "error": {
-              "statusCode": 400,
-              "body": {
-                "message": "Bad request",
-                "error": "Bad Request"
-              }
-            }
+          "400": {
+            "description": "Invalid verification token"
           }
         },
-        "findAll": {
-          "path": "/users/merchants",
-          "method": "GET",
-          "description": "Get all merchants (admin only)",
-          "authentication": "JWT + Admin Role",
-          "headers": {
-            "Authorization": "Bearer {token}"
+        "summary": "Verify user email with token",
+        "tags": [
+          "auth"
+        ]
+      }
+    }
+  },
+  "info": {
+    "title": "User Service API",
+    "description": "API documentation for the ecommerce platform user service",
+    "version": "1.0",
+    "contact": {}
+  },
+  "tags": [
+    {
+      "name": "users",
+      "description": ""
+    },
+    {
+      "name": "auth",
+      "description": ""
+    }
+  ],
+  "servers": [],
+  "components": {
+    "securitySchemes": {
+      "bearer": {
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "type": "http"
+      }
+    },
+    "schemas": {
+      "CreateUserDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "John Doe",
+            "description": "The name of the user"
           },
-          "response": {
-            "success": {
-              "statusCode": 200,
-              "body": [
-                {
-                  "id": "string",
-                  "name": "string",
-                  "email": "string",
-                  "role": "merchant",
-                  "isVerified": "boolean",
-                  "isEmailVerified": "boolean",
-                  "merchantProfile": {
-                    "id": "string",
-                    "storeName": "string",
-                    "location": "string",
-                    "storeNumber": "string",
-                    "phoneNumber": "string",
-                    "description": "string"
-                  }
-                }
-              ]
-            },
-            "error": {
-              "statusCode": 403,
-              "body": {
-                "message": "Forbidden",
-                "error": "Forbidden"
-              }
-            }
+          "email": {
+            "type": "string",
+            "example": "john@example.com",
+            "description": "The email address of the user"
+          },
+          "password": {
+            "type": "string",
+            "example": "password123",
+            "description": "The password for the user account",
+            "minLength": 6
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "ADMIN",
+              "USER",
+              "MERCHANT"
+            ],
+            "example": "USER",
+            "description": "The role assigned to the user"
+          },
+          "provider": {
+            "type": "string",
+            "enum": [
+              "LOCAL",
+              "GOOGLE"
+            ],
+            "example": "LOCAL",
+            "description": "The authentication provider (local or OAuth service)"
+          },
+          "providerId": {
+            "type": "string",
+            "example": "123456789",
+            "description": "The ID from the OAuth provider if applicable"
+          }
+        },
+        "required": [
+          "name",
+          "email"
+        ]
+      },
+      "CreateAdminDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "John Doe",
+            "description": "The name of the admin"
+          },
+          "email": {
+            "type": "string",
+            "example": "admin@example.com",
+            "description": "The email address of the admin"
+          },
+          "password": {
+            "type": "string",
+            "example": "StrongP@ss123",
+            "description": "The password must be at least 8 characters long and contain uppercase, lowercase, number and special character",
+            "minLength": 8
+          },
+          "adminSecretKey": {
+            "type": "string",
+            "example": "ADMIN_SECRET_KEY",
+            "description": "The admin registration secret key"
+          },
+          "provider": {
+            "type": "string",
+            "enum": [
+              "LOCAL",
+              "GOOGLE"
+            ],
+            "example": "LOCAL",
+            "description": "The authentication provider",
+            "default": "LOCAL"
+          }
+        },
+        "required": [
+          "name",
+          "email",
+          "password",
+          "adminSecretKey",
+          "provider"
+        ]
+      },
+      "CreateMerchantDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "John Doe",
+            "description": "The name of the merchant"
+          },
+          "email": {
+            "type": "string",
+            "example": "merchant@example.com",
+            "description": "The email address of the merchant"
+          },
+          "password": {
+            "type": "string",
+            "example": "password123",
+            "description": "The password for the merchant account",
+            "minLength": 6
+          },
+          "provider": {
+            "type": "string",
+            "enum": [
+              "LOCAL",
+              "GOOGLE"
+            ],
+            "example": "LOCAL",
+            "description": "The authentication provider (local or OAuth service)"
+          },
+          "providerId": {
+            "type": "string",
+            "example": "123456789",
+            "description": "The ID from the OAuth provider if applicable"
+          },
+          "storeName": {
+            "type": "string",
+            "example": "My Awesome Store",
+            "description": "The name of the store"
+          },
+          "location": {
+            "type": "string",
+            "example": "123 Main St, City, Country",
+            "description": "The location of the store"
+          },
+          "storeNumber": {
+            "type": "string",
+            "example": "A-123",
+            "description": "Store number or identifier"
+          },
+          "phoneNumber": {
+            "type": "string",
+            "example": "+1-555-123-4567",
+            "description": "Store contact number"
+          },
+          "description": {
+            "type": "string",
+            "example": "We sell high-quality products",
+            "description": "Store description"
+          }
+        },
+        "required": [
+          "name",
+          "email",
+          "password",
+          "storeName",
+          "location"
+        ]
+      },
+      "UpdateUserDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "John Doe",
+            "description": "The updated name of the user"
+          },
+          "email": {
+            "type": "string",
+            "example": "john@example.com",
+            "description": "The updated email address of the user"
+          },
+          "password": {
+            "type": "string",
+            "example": "newpassword123",
+            "description": "The updated password for the user account"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "ADMIN",
+              "USER",
+              "MERCHANT"
+            ],
+            "example": "USER",
+            "description": "The updated role for the user"
           }
         }
       }
     }
-  },
-  "authentication": {
-    "jwt": {
-      "type": "Bearer",
-      "description": "JWT token obtained from login or register endpoints",
-      "header": "Authorization: Bearer {token}",
-      "tokenExpiration": "24h"
-    },
-    "roles": {
-      "user": "Regular user with limited permissions",
-      "admin": "Administrator with full access",
-      "merchant": "Merchant with store management capabilities"
-    }
-  },
-  "dataModels": {
-    "User": {
-      "id": "string (UUID)",
-      "name": "string",
-      "email": "string",
-      "password": "string (hashed)",
-      "role": "enum (user, admin, merchant)",
-      "provider": "enum (local, google)",
-      "providerId": "string",
-      "createdAt": "Date",
-      "updatedAt": "Date",
-      "lastLoginAt": "Date",
-      "isActive": "boolean",
-      "isVerified": "boolean",
-      "isEmailVerified": "boolean",
-      "emailVerifyToken": "string",
-      "emailVerifyExpires": "Date"
-    },
-    "MerchantProfile": {
-      "id": "string (UUID)",
-      "userId": "string (UUID)",
-      "storeName": "string",
-      "location": "string",
-      "storeNumber": "string",
-      "phoneNumber": "string",
-      "description": "string",
-      "createdAt": "Date",
-      "updatedAt": "Date"
-    },
-    "CreateUserDto": {
-      "name": "string",
-      "email": "string",
-      "password": "string",
-      "role": "enum (user, admin, merchant)",
-      "provider": "enum (local, google)",
-      "providerId": "string"
-    },
-    "CreateMerchantDto": {
-      "name": "string",
-      "email": "string",
-      "password": "string",
-      "provider": "enum (local, google)",
-      "storeName": "string",
-      "location": "string",
-      "storeNumber": "string",
-      "phoneNumber": "string",
-      "description": "string"
-    },
-    "UpdateUserDto": {
-      "name": "string",
-      "email": "string",
-      "password": "string",
-      "role": "enum (user, admin, merchant)",
-      "isActive": "boolean"
-    },
-    "CreateAdminDto": {
-      "name": "string",
-      "email": "string",
-      "password": "string",
-      "adminSecretKey": "string",
-      "provider": "enum (local, google)"
-    }
-  },
-  "errorCodes": {
-    "400": "Bad Request - Invalid input data",
-    "401": "Unauthorized - Invalid credentials or token",
-    "403": "Forbidden - Insufficient permissions",
-    "404": "Not Found - Resource not found",
-    "409": "Conflict - Resource already exists",
-    "422": "Unprocessable Entity - Validation error",
-    "429": "Too Many Requests - Rate limit exceeded",
-    "500": "Internal Server Error - Server-side error",
-    "503": "Service Unavailable - Service temporarily unavailable"
-  },
-  "swagger": {
-    "url": "/api",
-    "description": "Interactive API documentation using Swagger UI"
   }
-} 
+}

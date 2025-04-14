@@ -13,22 +13,23 @@ This document provides detailed information about all the APIs exposed by the Us
     - [Google OAuth](#google-oauth)
       - [Google OAuth Callback](#google-oauth-callback)
     - [Get Profile](#get-profile)
-    - [Register new user](#register-new-user)
     - [Send Email Verification](#send-email-verification)
     - [Verify Email](#verify-email)
   - [User Management](#user-management)
     - [Create User](#create-user)
+    - [Create Admin User](#create-admin-user)
+    - [Create Merchant User](#create-merchant-user)
     - [Get All Users](#get-all-users)
     - [Get User by ID](#get-user-by-id)
     - [Update User](#update-user)
     - [Delete User](#delete-user)
-  - [Merchants](#merchants)
-    - [Register new merchant](#register-new-merchant)
-    - [Get merchant profile](#get-merchant-profile)
-    - [Verify merchant (Admin only)](#verify-merchant-admin-only)
+    - [Verify User](#verify-user)
+    - [Check Verification Status](#check-verification-status)
   - [Data Models](#data-models)
     - [User](#user)
     - [CreateUserDto](#createuserdto)
+    - [CreateAdminDto](#createadmindto)
+    - [CreateMerchantDto](#createmerchantdto)
     - [UpdateUserDto](#updateuserdto)
   - [Swagger Documentation](#swagger-documentation)
 
@@ -61,7 +62,10 @@ Register a new user with email and password.
 {
   "name": "John Doe",
   "email": "john@example.com",
-  "password": "password123"
+  "password": "password123",
+  "role": "USER",
+  "provider": "LOCAL",
+  "providerId": "123456789"
 }
 ```
 
@@ -188,68 +192,79 @@ Get the authenticated user's profile.
 }
 ```
 
-### Register new user
-
-```
-POST /auth/register
-```
-
-**Request Body:**
-```json
-{
-  "name": "John Doe",
-  "email": "user@example.com",
-  "password": "password123",
-  "role": "USER"  // Optional, defaults to USER
-}
-```
-
-**Response:**
-```json
-{
-  "user": {
-    "id": "uuid",
-    "email": "user@example.com",
-    "name": "John Doe",
-    "role": "USER",
-    "isEmailVerified": false
-  },
-  "access_token": "jwt_token"
-}
-```
-
 ### Send Email Verification
 
-```
-POST /auth/verify-email/send
-```
+Send a verification email to the user.
 
-**Authorization:** Bearer Token required
+- **URL**: `/auth/verify-email/send`
+- **Method**: `POST`
+- **Authentication Required**: Yes (JWT)
+- **Request Body**:
 
-**Request Body:**
 ```json
 {
   "email": "user@example.com"
 }
 ```
 
-**Response:**
+- **Success Response**:
+  - **Code**: 200 OK
+  - **Content**:
+
 ```json
 {
   "message": "Verification email sent successfully"
 }
 ```
 
+- **Error Responses**:
+  - **Code**: 401 UNAUTHORIZED
+  - **Content**:
+
+```json
+{
+  "statusCode": 401,
+  "message": "Unauthorized"
+}
+```
+
+  - **Code**: 404 NOT FOUND
+  - **Content**:
+
+```json
+{
+  "statusCode": 404,
+  "message": "User not found"
+}
+```
+
 ### Verify Email
 
-```
-GET /auth/verify-email?token=verification_token
-```
+Verify a user's email with the verification token.
 
-**Response:**
+- **URL**: `/auth/verify-email`
+- **Method**: `GET`
+- **Authentication Required**: No
+- **Query Parameters**:
+  - `token`: The verification token sent via email
+- **Success Response**:
+  - **Code**: 200 OK
+  - **Content**:
+
 ```json
 {
   "message": "Email verified successfully"
+}
+```
+
+- **Error Response**:
+  - **Code**: 400 BAD REQUEST
+  - **Content**:
+
+```json
+{
+  "statusCode": 400,
+  "message": "Invalid verification token"
 }
 ```
 
@@ -257,7 +272,7 @@ GET /auth/verify-email?token=verification_token
 
 ### Create User
 
-Create a new user (requires authentication).
+Create a new user.
 
 - **URL**: `/users`
 - **Method**: `POST`
@@ -266,10 +281,12 @@ Create a new user (requires authentication).
 
 ```json
 {
-  "name": "Jane Smith",
-  "email": "jane@example.com",
+  "name": "John Doe",
+  "email": "john@example.com",
   "password": "password123",
-  "role": "user"
+  "role": "USER",
+  "provider": "LOCAL",
+  "providerId": "123456789"
 }
 ```
 
@@ -279,14 +296,146 @@ Create a new user (requires authentication).
 
 ```json
 {
-  "id": "b1ffc999-9c0b-4ef8-bb6d-6bb9bd380a22",
-  "name": "Jane Smith",
-  "email": "jane@example.com",
+  "id": "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11",
+  "name": "John Doe",
+  "email": "john@example.com",
   "role": "user",
   "provider": "local",
   "providerId": null,
-  "createdAt": "2023-01-01T00:00:00.000Z",
-  "updatedAt": "2023-01-01T00:00:00.000Z"
+  "createdAt": "2023-01-01T00:00:00Z",
+  "updatedAt": "2023-01-01T00:00:00Z"
+}
+```
+
+- **Error Response**:
+  - **Code**: 400 BAD REQUEST
+  - **Content**:
+
+```json
+{
+  "statusCode": 400,
+  "message": ["email must be an email"],
+  "error": "Bad Request"
+}
+```
+
+### Create Admin User
+
+Register a new admin user.
+
+- **URL**: `/users/admin`
+- **Method**: `POST`
+- **Authentication Required**: Yes (JWT)
+- **Request Body**:
+
+```json
+{
+  "name": "Admin User",
+  "email": "admin@example.com",
+  "password": "StrongP@ss123",
+  "adminSecretKey": "ADMIN_SECRET_KEY",
+  "provider": "LOCAL"
+}
+```
+
+- **Success Response**:
+  - **Code**: 201 CREATED
+  - **Content**:
+
+```json
+{
+  "id": "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11",
+  "name": "Admin User",
+  "email": "admin@example.com",
+  "role": "admin",
+  "provider": "local",
+  "createdAt": "2023-01-01T00:00:00Z",
+  "updatedAt": "2023-01-01T00:00:00Z"
+}
+```
+
+- **Error Responses**:
+  - **Code**: 400 BAD REQUEST
+  - **Content**:
+
+```json
+{
+  "statusCode": 400,
+  "message": ["email must be an email"],
+  "error": "Bad Request"
+}
+```
+
+  - **Code**: 401 UNAUTHORIZED
+  - **Content**:
+
+```json
+{
+  "statusCode": 401,
+  "message": "Invalid admin registration key",
+  "error": "Unauthorized"
+}
+```
+
+### Create Merchant User
+
+Register a new merchant user.
+
+- **URL**: `/users/merchant`
+- **Method**: `POST`
+- **Authentication Required**: Yes (JWT)
+- **Request Body**:
+
+```json
+{
+  "name": "Merchant Store",
+  "email": "merchant@example.com",
+  "password": "password123",
+  "provider": "LOCAL",
+  "storeName": "My Awesome Store",
+  "location": "123 Main St, City, Country",
+  "storeNumber": "A-123",
+  "phoneNumber": "+1-555-123-4567",
+  "description": "We sell high-quality products"
+}
+```
+
+- **Success Response**:
+  - **Code**: 201 CREATED
+  - **Content**:
+
+```json
+{
+  "id": "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11",
+  "name": "Merchant Store",
+  "email": "merchant@example.com",
+  "role": "merchant",
+  "provider": "local",
+  "isVerified": false,
+  "createdAt": "2023-01-01T00:00:00Z",
+  "updatedAt": "2023-01-01T00:00:00Z",
+  "merchantProfile": {
+    "id": "b1eebc99-9c0b-4ef8-bb6d-6bb9bd380a22",
+    "storeName": "My Awesome Store",
+    "location": "123 Main St, City, Country",
+    "storeNumber": "A-123",
+    "phoneNumber": "+1-555-123-4567",
+    "description": "We sell high-quality products",
+    "createdAt": "2023-01-01T00:00:00Z",
+    "updatedAt": "2023-01-01T00:00:00Z"
+  }
+}
+```
+
+- **Error Response**:
+  - **Code**: 400 BAD REQUEST
+  - **Content**:
+
+```json
+{
+  "statusCode": 400,
+  "message": ["email must be an email"],
+  "error": "Bad Request"
 }
 ```
 
@@ -297,7 +446,7 @@ Get a list of all users (admin only).
 - **URL**: `/users`
 - **Method**: `GET`
 - **Authentication Required**: Yes (JWT)
-- **Authorization Required**: Admin role
+- **Authorization**: Admin role required
 - **Success Response**:
   - **Code**: 200 OK
   - **Content**:
@@ -311,18 +460,18 @@ Get a list of all users (admin only).
     "role": "user",
     "provider": "local",
     "providerId": null,
-    "createdAt": "2023-01-01T00:00:00.000Z",
-    "updatedAt": "2023-01-01T00:00:00.000Z"
+    "createdAt": "2023-01-01T00:00:00Z",
+    "updatedAt": "2023-01-01T00:00:00Z"
   },
   {
-    "id": "b1ffc999-9c0b-4ef8-bb6d-6bb9bd380a22",
+    "id": "b1ffc99-9c0b-4ef8-bb6d-6bb9bd380a22",
     "name": "Jane Smith",
     "email": "jane@example.com",
-    "role": "user",
+    "role": "admin",
     "provider": "local",
     "providerId": null,
-    "createdAt": "2023-01-01T00:00:00.000Z",
-    "updatedAt": "2023-01-01T00:00:00.000Z"
+    "createdAt": "2023-01-01T00:00:00Z",
+    "updatedAt": "2023-01-01T00:00:00Z"
   }
 ]
 ```
@@ -341,12 +490,13 @@ Get a list of all users (admin only).
 
 ### Get User by ID
 
-Get a user by their ID.
+Get a specific user by ID.
 
-- **URL**: `/users/:id`
+- **URL**: `/users/{id}`
 - **Method**: `GET`
 - **Authentication Required**: Yes (JWT)
-- **URL Parameters**: `id=[uuid]`
+- **URL Parameters**:
+  - `id`: User ID (UUID)
 - **Success Response**:
   - **Code**: 200 OK
   - **Content**:
@@ -359,8 +509,17 @@ Get a user by their ID.
   "role": "user",
   "provider": "local",
   "providerId": null,
-  "createdAt": "2023-01-01T00:00:00.000Z",
-  "updatedAt": "2023-01-01T00:00:00.000Z"
+  "isVerified": true,
+  "createdAt": "2023-01-01T00:00:00Z",
+  "updatedAt": "2023-01-01T00:00:00Z",
+  "merchantProfile": {
+    "id": "b1eebc99-9c0b-4ef8-bb6d-6bb9bd380a22",
+    "storeName": "My Awesome Store",
+    "location": "123 Main St, City, Country",
+    "storeNumber": "A-123",
+    "phoneNumber": "+1-555-123-4567",
+    "description": "We sell high-quality products"
+  }
 }
 ```
 
@@ -380,16 +539,19 @@ Get a user by their ID.
 
 Update a user's information.
 
-- **URL**: `/users/:id`
+- **URL**: `/users/{id}`
 - **Method**: `PATCH`
 - **Authentication Required**: Yes (JWT)
-- **URL Parameters**: `id=[uuid]`
+- **URL Parameters**:
+  - `id`: User ID (UUID)
 - **Request Body**:
 
 ```json
 {
-  "name": "John Smith",
-  "email": "johnsmith@example.com"
+  "name": "John Updated",
+  "email": "johnupdated@example.com",
+  "password": "newpassword123",
+  "role": "USER"
 }
 ```
 
@@ -400,13 +562,36 @@ Update a user's information.
 ```json
 {
   "id": "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11",
-  "name": "John Smith",
-  "email": "johnsmith@example.com",
+  "name": "John Updated",
+  "email": "johnupdated@example.com",
   "role": "user",
   "provider": "local",
   "providerId": null,
-  "createdAt": "2023-01-01T00:00:00.000Z",
-  "updatedAt": "2023-01-01T00:00:00.000Z"
+  "createdAt": "2023-01-01T00:00:00Z",
+  "updatedAt": "2023-01-01T00:00:00Z"
+}
+```
+
+- **Error Responses**:
+  - **Code**: 400 BAD REQUEST
+  - **Content**:
+
+```json
+{
+  "statusCode": 400,
+  "message": ["email must be an email"],
+  "error": "Bad Request"
+}
+```
+
+  - **Code**: 404 NOT FOUND
+  - **Content**:
+
+```json
+{
+  "statusCode": 404,
+  "message": "User not found",
+  "error": "Not Found"
 }
 ```
 
@@ -414,23 +599,23 @@ Update a user's information.
 
 Delete a user (admin only).
 
-- **URL**: `/users/:id`
+- **URL**: `/users/{id}`
 - **Method**: `DELETE`
 - **Authentication Required**: Yes (JWT)
-- **Authorization Required**: Admin role
-- **URL Parameters**: `id=[uuid]`
+- **Authorization**: Admin role required
+- **URL Parameters**:
+  - `id`: User ID (UUID)
 - **Success Response**:
   - **Code**: 200 OK
   - **Content**:
 
 ```json
 {
-  "statusCode": 200,
-  "message": "User successfully deleted"
+  "message": "User deleted successfully"
 }
 ```
 
-- **Error Response**:
+- **Error Responses**:
   - **Code**: 403 FORBIDDEN
   - **Content**:
 
@@ -442,96 +627,88 @@ Delete a user (admin only).
 }
 ```
 
-## Merchants
+  - **Code**: 404 NOT FOUND
+  - **Content**:
 
-### Register new merchant
-
-```
-POST /users/merchants
-```
-
-**Request Body:**
 ```json
 {
-  "name": "John Smith",
-  "email": "merchant@example.com",
-  "password": "password123",
-  "storeName": "John's Store",
-  "location": "123 Main St, Anytown, USA",
-  "storeNumber": "ST-12345",  // Optional
-  "phoneNumber": "+1-555-123-4567",  // Optional
-  "description": "Specialty goods store"  // Optional
+  "statusCode": 404,
+  "message": "User not found",
+  "error": "Not Found"
 }
 ```
 
-**Response:**
+### Verify User
+
+Verify a user (admin only).
+
+- **URL**: `/users/{id}/verify`
+- **Method**: `PATCH`
+- **Authentication Required**: Yes (JWT)
+- **Authorization**: Admin role required
+- **URL Parameters**:
+  - `id`: User ID (UUID)
+- **Success Response**:
+  - **Code**: 200 OK
+  - **Content**:
+
 ```json
 {
-  "user": {
-    "id": "uuid",
-    "email": "merchant@example.com",
-    "name": "John Smith",
-    "role": "MERCHANT",
-    "isVerified": false,
-    "isEmailVerified": false,
-    "merchantProfile": {
-      "id": "uuid",
-      "storeName": "John's Store",
-      "location": "123 Main St, Anytown, USA",
-      "storeNumber": "ST-12345",
-      "phoneNumber": "+1-555-123-4567",
-      "description": "Specialty goods store"
-    }
-  },
-  "access_token": "jwt_token"
+  "message": "User verified successfully"
 }
 ```
 
-### Get merchant profile
+- **Error Responses**:
+  - **Code**: 403 FORBIDDEN
+  - **Content**:
 
-```
-GET /users/merchants/:id
-```
-
-**Authorization:** Bearer Token required
-
-**Response:**
 ```json
 {
-  "id": "uuid",
-  "email": "merchant@example.com",
-  "name": "John Smith",
-  "role": "MERCHANT",
-  "isVerified": true,
-  "isEmailVerified": true,
-  "merchantProfile": {
-    "id": "uuid",
-    "storeName": "John's Store",
-    "location": "123 Main St, Anytown, USA",
-    "storeNumber": "ST-12345",
-    "phoneNumber": "+1-555-123-4567",
-    "description": "Specialty goods store"
-  }
+  "statusCode": 403,
+  "message": "Forbidden resource",
+  "error": "Forbidden"
 }
 ```
 
-### Verify merchant (Admin only)
+  - **Code**: 404 NOT FOUND
+  - **Content**:
 
-```
-PATCH /users/merchants/:id/verify
-```
-
-**Authorization:** Bearer Token required (Admin role)
-
-**Response:**
 ```json
 {
-  "id": "uuid",
-  "email": "merchant@example.com",
-  "name": "John Smith",
-  "role": "MERCHANT",
-  "isVerified": true,
-  "isEmailVerified": true
+  "statusCode": 404,
+  "message": "User not found",
+  "error": "Not Found"
+}
+```
+
+### Check Verification Status
+
+Check user verification status.
+
+- **URL**: `/users/verification/status/{id}`
+- **Method**: `GET`
+- **Authentication Required**: Yes (JWT)
+- **URL Parameters**:
+  - `id`: User ID (UUID)
+- **Success Response**:
+  - **Code**: 200 OK
+  - **Content**:
+
+```json
+{
+  "isVerified": true
+}
+```
+
+- **Error Response**:
+  - **Code**: 404 NOT FOUND
+  - **Content**:
+
+```json
+{
+  "statusCode": 404,
+  "message": "User not found",
+  "error": "Not Found"
 }
 ```
 
@@ -541,15 +718,23 @@ PATCH /users/merchants/:id/verify
 
 ```typescript
 {
-  id: string;            // UUID
-  name: string;          // Full name
-  email: string;         // Email address (unique)
-  password: string;      // Hashed password (not returned in responses)
-  role: string;          // 'user' or 'admin'
-  provider: string;      // 'local' or 'google'
-  providerId: string;    // ID from OAuth provider (if applicable)
-  createdAt: Date;       // Creation timestamp
-  updatedAt: Date;       // Last update timestamp
+  id: string; // UUID
+  name: string;
+  email: string;
+  role: 'ADMIN' | 'USER' | 'MERCHANT';
+  provider: 'LOCAL' | 'GOOGLE';
+  providerId: string | null;
+  isVerified: boolean;
+  createdAt: string; // ISO 8601 date string
+  updatedAt: string; // ISO 8601 date string
+  merchantProfile?: {
+    id: string;
+    storeName: string;
+    location: string;
+    storeNumber?: string;
+    phoneNumber?: string;
+    description?: string;
+  };
 }
 ```
 
@@ -557,12 +742,41 @@ PATCH /users/merchants/:id/verify
 
 ```typescript
 {
-  name: string;          // Required
-  email: string;         // Required, must be valid email
-  password: string;      // Optional for OAuth users, min length 6
-  role: string;          // Optional, defaults to 'user'
-  provider: string;      // Optional, defaults to 'local'
-  providerId: string;    // Optional
+  name: string; // Required
+  email: string; // Required, must be valid email
+  password: string; // Required, min length 6
+  role?: 'ADMIN' | 'USER' | 'MERCHANT'; // Optional
+  provider?: 'LOCAL' | 'GOOGLE'; // Optional, default is 'LOCAL'
+  providerId?: string; // Optional
+}
+```
+
+### CreateAdminDto
+
+```typescript
+{
+  name: string; // Required
+  email: string; // Required, must be valid email
+  password: string; // Required, min length 8, must contain uppercase, lowercase, number and special character
+  adminSecretKey: string; // Required
+  provider: 'LOCAL' | 'GOOGLE'; // Required, default is 'LOCAL'
+}
+```
+
+### CreateMerchantDto
+
+```typescript
+{
+  name: string; // Required
+  email: string; // Required, must be valid email
+  password: string; // Required, min length 6
+  provider: 'LOCAL' | 'GOOGLE'; // Required, default is 'LOCAL'
+  providerId?: string; // Optional
+  storeName: string; // Required
+  location: string; // Required
+  storeNumber?: string; // Optional
+  phoneNumber?: string; // Optional
+  description?: string; // Optional
 }
 ```
 
@@ -570,23 +784,16 @@ PATCH /users/merchants/:id/verify
 
 ```typescript
 {
-  name?: string;         // Optional
-  email?: string;        // Optional, must be valid email
-  password?: string;     // Optional
-  role?: string;         // Optional
+  name?: string; // Optional
+  email?: string; // Optional, must be valid email
+  password?: string; // Optional
+  role?: 'ADMIN' | 'USER' | 'MERCHANT'; // Optional
 }
 ```
 
 ## Swagger Documentation
 
-For an interactive API documentation, you can use the Swagger UI at:
+The API is documented using Swagger. When the application is running, you can access:
 
-```
-http://localhost:3000/api
-```
-
-The Swagger UI allows you to:
-- Explore all available endpoints
-- See required parameters and schemas
-- Test endpoints directly from the browser
-- Authenticate using JWT tokens 
+- **Swagger UI**: `http://localhost:3000/api`
+- **Swagger JSON**: `http://localhost:3000/api-json` 
