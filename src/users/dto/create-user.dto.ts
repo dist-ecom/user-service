@@ -37,8 +37,7 @@ export class CreateUserDto {
   })
   @IsEnum(UserRole)
   @IsOptional()
-  @IsString()
-  role?: string;
+  role?: UserRole;
 
   @ApiProperty({ 
     enum: AuthProvider, 
