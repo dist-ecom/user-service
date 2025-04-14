@@ -34,11 +34,15 @@ The User table stores all user data, including both locally registered users and
 | name        | VARCHAR   | NULLABLE         | User's full name                       |
 | email       | VARCHAR   | UNIQUE, NOT NULL | User's email address                   |
 | password    | VARCHAR   | NULLABLE         | Hashed password (null for OAuth users) |
-| role        | ENUM      | NOT NULL         | User role (admin, user)                |
+| role        | ENUM      | NOT NULL         | User role (admin, user, merchant)       |
 | provider    | ENUM      | NOT NULL         | Auth provider (local, google)          |
 | providerId  | VARCHAR   | NULLABLE         | ID from OAuth provider                 |
 | createdAt   | TIMESTAMP | NOT NULL         | Record creation timestamp              |
 | updatedAt   | TIMESTAMP | NOT NULL         | Record update timestamp                |
+| isVerified  | BOOLEAN   | NOT NULL         | Whether the user's account is verified  |
+| isEmailVerified | BOOLEAN | NOT NULL         | Whether the user's email is verified    |
+| emailVerifyToken | VARCHAR | NULLABLE         | Token for email verification            |
+| emailVerifyExpires | TIMESTAMP | NULLABLE         | Expiration time for email verification |
 
 #### Indexes
 
@@ -113,7 +117,8 @@ export class User {
 ```typescript
 export enum UserRole {
   ADMIN = 'admin',
-  USER = 'user'
+  USER = 'user',
+  MERCHANT = 'merchant'
 }
 ```
 
@@ -168,4 +173,51 @@ TypeOrmModule.forRoot({
 })
 ```
 
-> **Warning**: The `synchronize: true` option automatically syncs entity definitions with the database schema. This is useful during development but should be disabled in production to prevent accidental data loss. 
+> **Warning**: The `synchronize: true` option automatically syncs entity definitions with the database schema. This is useful during development but should be disabled in production to prevent accidental data loss.
+
+## Merchant Model
+
+| Field | Type | Description |
+| ----- | ---- | ----------- |
+| id | String (UUID) | Primary key |
+| storeName | String | Name of the merchant's store |
+| location | String | Physical location of the store |
+| storeNumber | String (optional) | Store identifier number |
+| phoneNumber | String (optional) | Contact phone number |
+| description | String (optional) | Store description |
+| createdAt | DateTime | When the merchant profile was created |
+| updatedAt | DateTime | When the merchant profile was last updated |
+| userId | String | Foreign key to User model (one-to-one relationship) |
+
+### Relationships
+
+- One-to-one relationship with User model (a merchant has one user account, a user can have at most one merchant profile)
+
+## User Model
+
+| Field | Type | Description |
+| ----- | ---- | ----------- |
+| id | String (UUID) | Primary key |
+| name | String (optional) | User's name |
+| email | String | User's email address (unique) |
+| password | String (optional) | Hashed password (null for OAuth users) |
+| role | UserRole | User's role (ADMIN, USER, MERCHANT) |
+| provider | AuthProvider | Authentication provider (LOCAL, GOOGLE) |
+| providerId | String (optional) | ID from external provider (for OAuth) |
+| isVerified | Boolean | Whether the user's account is verified (default: false) |
+| isEmailVerified | Boolean | Whether the user's email is verified (default: false) |
+| emailVerifyToken | String (optional) | Token for email verification (unique) |
+| emailVerifyExpires | DateTime (optional) | Expiration time for email verification token |
+| createdAt | DateTime | When the user was created |
+| updatedAt | DateTime | When the user was last updated |
+
+## UserRole Enum
+
+- `ADMIN`: Administrator with full system access
+- `USER`: Regular user with standard permissions
+- `MERCHANT`: Store owner with merchant-specific permissions
+
+## AuthProvider Enum
+
+- `LOCAL`: User registered with email and password
+- `GOOGLE`: User authenticated via Google OAuth

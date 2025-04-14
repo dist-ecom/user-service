@@ -10,8 +10,12 @@ import { MailService } from '../mail/mail.service';
 
 // Import types from Prisma client
 import { Prisma, User, UserRole, AuthProvider } from '@prisma/client';
-import type { User as UserWithProfile } from '@prisma/client';
 import { CreateMerchantDto } from './dto/create-merchant.dto';
+
+// Define a type alias for User with merchantProfile
+type UserWithProfile = User & {
+  merchantProfile?: unknown;
+};
 
 @Injectable()
 export class UsersService {
@@ -58,7 +62,7 @@ export class UsersService {
     return user;
   }
 
-  async findAll(): Promise<any[]> {
+  async findAll(): Promise<UserWithProfile[]> {
     return this.prisma.user.findMany({
       include: { merchantProfile: true },
     });
@@ -180,57 +184,9 @@ export class UsersService {
     });
   }
 
-  // New method to create a merchant
-  async createMerchant(createMerchantDto: CreateMerchantDto): Promise<any> {
-    if (createMerchantDto.password && createMerchantDto.provider === AuthProvider.LOCAL) {
-      const salt = 10;
-      createMerchantDto.password = await bcrypt.hash(createMerchantDto.password, salt);
-    }
-    
-    const { 
-      storeName, 
-      location, 
-      storeNumber, 
-      phoneNumber, 
-      description,
-      ...userData 
-    } = createMerchantDto;
-    
-    // Create the user
-    const user = await this.prisma.user.create({
-      data: {
-        ...userData as any,
-        role: UserRole.MERCHANT,
-        isVerified: false, // Merchants require verification
-        isEmailVerified: false, // Merchants need email verification
-      },
-    });
-    
-    // Create the merchant profile
-    await this.prisma.merchant.create({
-      data: {
-        storeName,
-        location,
-        storeNumber,
-        phoneNumber,
-        description,
-        userId: user.id,
-      },
-    });
-    
-    // Send verification email
-    await this.sendVerificationEmail(user.email);
-    
-    // Return user with the merchant profile
-    return this.prisma.user.findUnique({
-      where: { id: user.id },
-      include: { merchantProfile: true },
-    });
-  }
-
   // Method to verify a user
   async verifyUser(id: string): Promise<User> {
-    const user = await this.findOne(id);
+    await this.findOne(id);
     
     return this.prisma.user.update({
       where: { id },
@@ -261,8 +217,8 @@ export class UsersService {
   }
 
   async sendVerificationEmail(email: string): Promise<void> {
-    const user = await this.findByEmail(email);
-    if (!user) {
+    const userToVerify = await this.findByEmail(email);
+    if (!userToVerify) {
       throw new NotFoundException('User not found');
     }
 
@@ -273,7 +229,7 @@ export class UsersService {
 
     // Update user with verification token details
     await this.prisma.user.update({
-      where: { id: user.id },
+      where: { id: userToVerify.id },
       data: {
         emailVerifyToken: token,
         emailVerifyExpires: tokenExpires,
@@ -281,7 +237,7 @@ export class UsersService {
     });
 
     // Send verification email
-    await this.mailService.sendVerificationEmail(user.email, user.name || 'User', token);
+    await this.mailService.sendVerificationEmail(userToVerify.email, userToVerify.name || 'User', token);
   }
 
   async verifyEmail(token: string): Promise<void> {
@@ -308,5 +264,49 @@ export class UsersService {
         isEmailVerified: true,
       },
     });
+  }
+
+  // New method to create a merchant
+  async createMerchant(createMerchantDto: CreateMerchantDto): Promise<UserWithProfile> {
+    if (createMerchantDto.password && createMerchantDto.provider === AuthProvider.LOCAL) {
+      const salt = 10;
+      createMerchantDto.password = await bcrypt.hash(createMerchantDto.password, salt);
+    }
+    
+    const { 
+      storeName, 
+      location, 
+      storeNumber, 
+      phoneNumber, 
+      description,
+      ...userData 
+    } = createMerchantDto;
+    
+    // Create the user
+    const createdUser = await this.prisma.user.create({
+      data: {
+        ...userData as unknown as Prisma.UserCreateInput,
+        role: UserRole.MERCHANT,
+        isVerified: false, // Merchants require verification
+        merchantProfile: {
+          create: {
+            storeName,
+            location,
+            storeNumber,
+            phoneNumber,
+            description,
+          }
+        }
+      }
+    });
+    
+    // Send verification email
+    await this.sendVerificationEmail(createdUser.email);
+    
+    // Return user with the merchant profile
+    return this.prisma.user.findUnique({
+      where: { id: createdUser.id },
+      include: { merchantProfile: true },
+    }) as Promise<UserWithProfile>;
   }
 }

@@ -3,17 +3,34 @@
 This document provides detailed information about all the APIs exposed by the User Service.
 
 ## Table of Contents
-- [Authentication](#authentication)
-  - [Register](#register)
-  - [Login](#login)
-  - [Google OAuth](#google-oauth)
-  - [Get Profile](#get-profile)
-- [User Management](#user-management)
-  - [Create User](#create-user)
-  - [Get All Users](#get-all-users)
-  - [Get User by ID](#get-user-by-id)
-  - [Update User](#update-user)
-  - [Delete User](#delete-user)
+- [API Reference](#api-reference)
+  - [Table of Contents](#table-of-contents)
+  - [Base URL](#base-url)
+  - [Authentication Header](#authentication-header)
+  - [Authentication](#authentication)
+    - [Register](#register)
+    - [Login](#login)
+    - [Google OAuth](#google-oauth)
+      - [Google OAuth Callback](#google-oauth-callback)
+    - [Get Profile](#get-profile)
+    - [Register new user](#register-new-user)
+    - [Send Email Verification](#send-email-verification)
+    - [Verify Email](#verify-email)
+  - [User Management](#user-management)
+    - [Create User](#create-user)
+    - [Get All Users](#get-all-users)
+    - [Get User by ID](#get-user-by-id)
+    - [Update User](#update-user)
+    - [Delete User](#delete-user)
+  - [Merchants](#merchants)
+    - [Register new merchant](#register-new-merchant)
+    - [Get merchant profile](#get-merchant-profile)
+    - [Verify merchant (Admin only)](#verify-merchant-admin-only)
+  - [Data Models](#data-models)
+    - [User](#user)
+    - [CreateUserDto](#createuserdto)
+    - [UpdateUserDto](#updateuserdto)
+  - [Swagger Documentation](#swagger-documentation)
 
 ## Base URL
 
@@ -168,6 +185,71 @@ Get the authenticated user's profile.
 {
   "statusCode": 401,
   "message": "Unauthorized"
+}
+```
+
+### Register new user
+
+```
+POST /auth/register
+```
+
+**Request Body:**
+```json
+{
+  "name": "John Doe",
+  "email": "user@example.com",
+  "password": "password123",
+  "role": "USER"  // Optional, defaults to USER
+}
+```
+
+**Response:**
+```json
+{
+  "user": {
+    "id": "uuid",
+    "email": "user@example.com",
+    "name": "John Doe",
+    "role": "USER",
+    "isEmailVerified": false
+  },
+  "access_token": "jwt_token"
+}
+```
+
+### Send Email Verification
+
+```
+POST /auth/verify-email/send
+```
+
+**Authorization:** Bearer Token required
+
+**Request Body:**
+```json
+{
+  "email": "user@example.com"
+}
+```
+
+**Response:**
+```json
+{
+  "message": "Verification email sent successfully"
+}
+```
+
+### Verify Email
+
+```
+GET /auth/verify-email?token=verification_token
+```
+
+**Response:**
+```json
+{
+  "message": "Email verified successfully"
 }
 ```
 
@@ -357,6 +439,99 @@ Delete a user (admin only).
   "statusCode": 403,
   "message": "Forbidden resource",
   "error": "Forbidden"
+}
+```
+
+## Merchants
+
+### Register new merchant
+
+```
+POST /users/merchants
+```
+
+**Request Body:**
+```json
+{
+  "name": "John Smith",
+  "email": "merchant@example.com",
+  "password": "password123",
+  "storeName": "John's Store",
+  "location": "123 Main St, Anytown, USA",
+  "storeNumber": "ST-12345",  // Optional
+  "phoneNumber": "+1-555-123-4567",  // Optional
+  "description": "Specialty goods store"  // Optional
+}
+```
+
+**Response:**
+```json
+{
+  "user": {
+    "id": "uuid",
+    "email": "merchant@example.com",
+    "name": "John Smith",
+    "role": "MERCHANT",
+    "isVerified": false,
+    "isEmailVerified": false,
+    "merchantProfile": {
+      "id": "uuid",
+      "storeName": "John's Store",
+      "location": "123 Main St, Anytown, USA",
+      "storeNumber": "ST-12345",
+      "phoneNumber": "+1-555-123-4567",
+      "description": "Specialty goods store"
+    }
+  },
+  "access_token": "jwt_token"
+}
+```
+
+### Get merchant profile
+
+```
+GET /users/merchants/:id
+```
+
+**Authorization:** Bearer Token required
+
+**Response:**
+```json
+{
+  "id": "uuid",
+  "email": "merchant@example.com",
+  "name": "John Smith",
+  "role": "MERCHANT",
+  "isVerified": true,
+  "isEmailVerified": true,
+  "merchantProfile": {
+    "id": "uuid",
+    "storeName": "John's Store",
+    "location": "123 Main St, Anytown, USA",
+    "storeNumber": "ST-12345",
+    "phoneNumber": "+1-555-123-4567",
+    "description": "Specialty goods store"
+  }
+}
+```
+
+### Verify merchant (Admin only)
+
+```
+PATCH /users/merchants/:id/verify
+```
+
+**Authorization:** Bearer Token required (Admin role)
+
+**Response:**
+```json
+{
+  "id": "uuid",
+  "email": "merchant@example.com",
+  "name": "John Smith",
+  "role": "MERCHANT",
+  "isVerified": true,
+  "isEmailVerified": true
 }
 ```
 

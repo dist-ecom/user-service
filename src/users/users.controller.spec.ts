@@ -83,6 +83,7 @@ describe('UsersController', () => {
       expect(result).toEqual(mockUser);
       expect(service.findOne).toHaveBeenCalledWith(
         '123e4567-e89b-12d3-a456-426614174000',
+        true
       );
     });
   });

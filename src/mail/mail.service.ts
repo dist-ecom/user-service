@@ -24,7 +24,7 @@ export class MailService {
       });
     } else {
       // For development - create a test account using Ethereal
-      this.setupTestTransporter();
+      void this.setupTestTransporter();
     }
   }
 

@@ -5,6 +5,7 @@ import { ConfigService } from '@nestjs/config';
 import { CreateAdminDto } from './dto/create-admin.dto';
 import { PrismaService } from '../prisma/prisma.service';
 import { User, UserRole, AuthProvider } from '@prisma/client';
+import { MailService } from '../mail/mail.service';
 
 const mockUser = {
   id: '123e4567-e89b-12d3-a456-426614174000',
@@ -14,6 +15,10 @@ const mockUser = {
   role: UserRole.USER,
   provider: AuthProvider.LOCAL,
   providerId: '',
+  isVerified: true,
+  isEmailVerified: false,
+  emailVerifyToken: null,
+  emailVerifyExpires: null,
   createdAt: new Date(),
   updatedAt: new Date(),
 } as User;
@@ -28,6 +33,7 @@ describe('UsersService', () => {
   let service: UsersService;
   let prisma: PrismaService;
   let configService: ConfigService;
+  let mailService: MailService;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -60,12 +66,19 @@ describe('UsersService', () => {
             }),
           },
         },
+        {
+          provide: MailService,
+          useValue: {
+            sendVerificationEmail: jest.fn().mockResolvedValue(undefined),
+          },
+        },
       ],
     }).compile();
 
     service = module.get<UsersService>(UsersService);
     prisma = module.get<PrismaService>(PrismaService);
     configService = module.get<ConfigService>(ConfigService);
+    mailService = module.get<MailService>(MailService);
   });
 
   it('should be defined', () => {
