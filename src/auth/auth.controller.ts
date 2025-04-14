@@ -10,7 +10,7 @@ import { AuthGuard } from '@nestjs/passport';
 import { AuthService } from './auth.service';
 import { UsersService } from '../users/users.service';
 import { CreateUserDto } from '../users/dto/create-user.dto';
-import { User, AuthProvider } from '../users/entities/user.entity';
+import { User } from '@prisma/client';
 import { 
   ApiTags, 
   ApiOperation, 
@@ -20,6 +20,7 @@ import {
   ApiExcludeEndpoint
 } from '@nestjs/swagger';
 
+// Define the request interface with Prisma User type
 interface RequestWithUser {
   user: User;
 }
@@ -56,7 +57,7 @@ export class AuthController {
   @ApiResponse({ status: 400, description: 'Bad request' })
   async register(@Body() createUserDto: CreateUserDto) {
     // Ensure provider is set to local for manual registrations
-    createUserDto.provider = AuthProvider.LOCAL;
+    createUserDto.provider = 'LOCAL';
     const user = await this.usersService.create(createUserDto);
     return this.authService.login(user);
   }

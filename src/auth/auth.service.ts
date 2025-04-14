@@ -1,7 +1,7 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '../users/users.service';
-import { User, AuthProvider } from '../users/entities/user.entity';
+import { User } from '@prisma/client';
 
 interface OAuthUser {
   emails?: { value: string }[];
@@ -19,7 +19,7 @@ export class AuthService {
   async validateUser(email: string, password: string): Promise<User> {
     const user = await this.usersService.findByEmail(email);
 
-    if (!user || !(await user.validatePassword(password))) {
+    if (!user || !(await this.usersService.validatePassword(user, password))) {
       throw new UnauthorizedException('Invalid credentials');
     }
 
@@ -42,7 +42,7 @@ export class AuthService {
     };
   }
 
-  async validateOAuthLogin(profile: OAuthUser, provider: AuthProvider) {
+  async validateOAuthLogin(profile: OAuthUser, provider: string) {
     const { emails, displayName, id } = profile;
 
     if (!emails || emails.length === 0) {

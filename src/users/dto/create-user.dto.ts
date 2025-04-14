@@ -4,9 +4,20 @@ import {
   IsOptional,
   IsEnum,
   MinLength,
+  IsString,
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
-import { UserRole, AuthProvider } from '../entities/user.entity';
+
+// Define the enum values as string literals
+export enum UserRole {
+  ADMIN = 'ADMIN',
+  USER = 'USER',
+}
+
+export enum AuthProvider {
+  LOCAL = 'LOCAL',
+  GOOGLE = 'GOOGLE',
+}
 
 export class CreateUserDto {
   @ApiProperty({ example: 'John Doe', description: 'The name of the user' })
@@ -36,7 +47,8 @@ export class CreateUserDto {
   })
   @IsEnum(UserRole)
   @IsOptional()
-  role?: UserRole;
+  @IsString()
+  role?: string;
 
   @ApiProperty({ 
     enum: AuthProvider, 
@@ -46,7 +58,8 @@ export class CreateUserDto {
   })
   @IsEnum(AuthProvider)
   @IsOptional()
-  provider?: AuthProvider;
+  @IsString()
+  provider?: string;
 
   @ApiProperty({ 
     example: '123456789', 
