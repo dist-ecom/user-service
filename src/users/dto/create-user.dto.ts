@@ -7,17 +7,7 @@ import {
   IsString,
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
-
-// Define the enum values as string literals
-export enum UserRole {
-  ADMIN = 'ADMIN',
-  USER = 'USER',
-}
-
-export enum AuthProvider {
-  LOCAL = 'LOCAL',
-  GOOGLE = 'GOOGLE',
-}
+import { UserRole, AuthProvider } from '@prisma/client';
 
 export class CreateUserDto {
   @ApiProperty({ example: 'John Doe', description: 'The name of the user' })

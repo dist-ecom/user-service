@@ -1,9 +1,2 @@
-export enum UserRole {
-  ADMIN = 'ADMIN',
-  USER = 'USER',
-}
-
-export enum AuthProvider {
-  LOCAL = 'LOCAL',
-  GOOGLE = 'GOOGLE',
-} 
+// Re-export the enums from Prisma to maintain backward compatibility
+export { UserRole, AuthProvider } from '@prisma/client'; 

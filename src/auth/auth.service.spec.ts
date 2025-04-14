@@ -3,7 +3,7 @@ import { JwtService } from '@nestjs/jwt';
 import { UnauthorizedException } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { UsersService } from '../users/users.service';
-import { User, UserRole, AuthProvider } from '../users/entities/user.entity';
+import { User, UserRole, AuthProvider } from '@prisma/client';
 
 describe('AuthService', () => {
   let service: AuthService;
@@ -20,8 +20,7 @@ describe('AuthService', () => {
     providerId: '',
     createdAt: new Date(),
     updatedAt: new Date(),
-    validatePassword: jest.fn().mockImplementation(async () => true),
-  } as unknown as User;
+  } as User;
 
   const mockJwtToken = 'mock.jwt.token';
 
@@ -34,6 +33,7 @@ describe('AuthService', () => {
           useValue: {
             findByEmail: jest.fn().mockResolvedValue(mockUser),
             findOrCreateSocialUser: jest.fn().mockResolvedValue(mockUser),
+            validatePassword: jest.fn().mockResolvedValue(true),
           },
         },
         {
@@ -56,7 +56,7 @@ describe('AuthService', () => {
 
   describe('validateUser', () => {
     it('should return a user when credentials are valid', async () => {
-      (mockUser.validatePassword as jest.Mock).mockResolvedValueOnce(true);
+      jest.spyOn(usersService, 'validatePassword').mockResolvedValueOnce(true);
 
       const result = await service.validateUser(
         'test@example.com',
@@ -65,7 +65,7 @@ describe('AuthService', () => {
 
       expect(result).toEqual(mockUser);
       expect(usersService.findByEmail).toHaveBeenCalledWith('test@example.com');
-      expect(mockUser.validatePassword).toHaveBeenCalledWith('password123');
+      expect(usersService.validatePassword).toHaveBeenCalledWith(mockUser, 'password123');
     });
 
     it('should throw UnauthorizedException when user is not found', async () => {
@@ -77,7 +77,7 @@ describe('AuthService', () => {
     });
 
     it('should throw UnauthorizedException when password is invalid', async () => {
-      (mockUser.validatePassword as jest.Mock).mockResolvedValueOnce(false);
+      jest.spyOn(usersService, 'validatePassword').mockResolvedValueOnce(false);
 
       await expect(
         service.validateUser('test@example.com', 'wrongpassword'),

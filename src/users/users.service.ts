@@ -9,9 +9,6 @@ import * as bcrypt from 'bcrypt';
 // Import types from Prisma client
 import { Prisma, User } from '@prisma/client';
 
-// Import enums to maintain compatibility
-import { UserRole, AuthProvider } from './entities/user.enum';
-
 @Injectable()
 export class UsersService {
   constructor(
@@ -28,7 +25,7 @@ export class UsersService {
     return this.prisma.user.create({
       data: {
         ...createUserDto,
-        provider: createUserDto.provider as any,
+        provider: createUserDto.provider as Prisma.UserCreateInput['provider'],
       } as Prisma.UserCreateInput,
     });
   }
@@ -67,7 +64,7 @@ export class UsersService {
       where: { id },
       data: {
         ...updateUserDto,
-        provider: updateUserDto.provider as any,
+        provider: updateUserDto.provider as Prisma.UserUpdateInput['provider'],
       } as Prisma.UserUpdateInput,
     });
   }
@@ -92,9 +89,9 @@ export class UsersService {
         data: {
           email,
           name,
-          provider: provider as any,
+          provider: provider as Prisma.UserCreateInput['provider'],
           providerId,
-          role: 'USER' as any,
+          role: 'USER' as Prisma.UserCreateInput['role'],
         },
       });
     }
@@ -108,7 +105,7 @@ export class UsersService {
     return this.prisma.user.update({
       where: { id: user.id },
       data: {
-        provider: provider as any,
+        provider: provider as Prisma.UserUpdateInput['provider'],
         providerId,
       },
     });
@@ -147,8 +144,8 @@ export class UsersService {
         email: createAdminDto.email,
         name: createAdminDto.name,
         password: hashedPassword,
-        role: 'ADMIN' as any,
-        provider: 'LOCAL' as any,
+        role: 'ADMIN' as Prisma.UserCreateInput['role'],
+        provider: 'LOCAL' as Prisma.UserCreateInput['provider'],
       },
     });
   }

@@ -7,7 +7,7 @@ import {
   IsString,
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
-import { UserRole, AuthProvider } from '../entities/user.entity';
+import { AuthProvider } from '@prisma/client';
 
 export class CreateAdminDto {
   @ApiProperty({ example: 'John Doe', description: 'The name of the admin' })

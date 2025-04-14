@@ -1,11 +1,10 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { getRepositoryToken } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
 import { UsersService } from './users.service';
-import { User, UserRole, AuthProvider } from './entities/user.entity';
 import { NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { CreateAdminDto } from './dto/create-admin.dto';
+import { PrismaService } from '../prisma/prisma.service';
+import { User, UserRole, AuthProvider } from '@prisma/client';
 
 const mockUser = {
   id: '123e4567-e89b-12d3-a456-426614174000',
@@ -17,8 +16,6 @@ const mockUser = {
   providerId: '',
   createdAt: new Date(),
   updatedAt: new Date(),
-  hashPassword: jest.fn(),
-  validatePassword: jest.fn().mockResolvedValue(true),
 } as User;
 
 const mockAdmin = {
@@ -29,7 +26,7 @@ const mockAdmin = {
 
 describe('UsersService', () => {
   let service: UsersService;
-  let repository: Repository<User>;
+  let prisma: PrismaService;
   let configService: ConfigService;
 
   beforeEach(async () => {
@@ -37,16 +34,15 @@ describe('UsersService', () => {
       providers: [
         UsersService,
         {
-          provide: getRepositoryToken(User),
+          provide: PrismaService,
           useValue: {
-            find: jest.fn().mockResolvedValue([mockUser]),
-            findOne: jest.fn().mockResolvedValue(mockUser),
-            create: jest.fn().mockReturnValue(mockUser),
-            save: jest.fn().mockResolvedValue(mockUser),
-            delete: jest.fn().mockResolvedValue(undefined),
-            merge: jest
-              .fn()
-              .mockImplementation((entity, dto) => ({ ...entity, ...dto })),
+            user: {
+              findMany: jest.fn().mockResolvedValue([mockUser]),
+              findUnique: jest.fn().mockResolvedValue(mockUser),
+              create: jest.fn().mockResolvedValue(mockUser),
+              update: jest.fn().mockResolvedValue(mockUser),
+              delete: jest.fn().mockResolvedValue(mockUser),
+            },
           },
         },
         {
@@ -68,7 +64,7 @@ describe('UsersService', () => {
     }).compile();
 
     service = module.get<UsersService>(UsersService);
-    repository = module.get<Repository<User>>(getRepositoryToken(User));
+    prisma = module.get<PrismaService>(PrismaService);
     configService = module.get<ConfigService>(ConfigService);
   });
 
@@ -80,7 +76,7 @@ describe('UsersService', () => {
     it('should return an array of users', async () => {
       const result = await service.findAll();
       expect(result).toEqual([mockUser]);
-      expect(repository.find).toHaveBeenCalled();
+      expect(prisma.user.findMany).toHaveBeenCalled();
     });
   });
 
@@ -88,13 +84,13 @@ describe('UsersService', () => {
     it('should return a single user', async () => {
       const result = await service.findOne(mockUser.id);
       expect(result).toEqual(mockUser);
-      expect(repository.findOne).toHaveBeenCalledWith({
+      expect(prisma.user.findUnique).toHaveBeenCalledWith({
         where: { id: mockUser.id },
       });
     });
 
     it('should throw NotFoundException when user does not exist', async () => {
-      jest.spyOn(repository, 'findOne').mockResolvedValueOnce(null);
+      jest.spyOn(prisma.user, 'findUnique').mockResolvedValueOnce(null);
       await expect(service.findOne('non-existent')).rejects.toThrow(
         NotFoundException,
       );
@@ -105,7 +101,7 @@ describe('UsersService', () => {
     it('should find a user by email', async () => {
       const result = await service.findByEmail(mockUser.email);
       expect(result).toEqual(mockUser);
-      expect(repository.findOne).toHaveBeenCalledWith({
+      expect(prisma.user.findUnique).toHaveBeenCalledWith({
         where: { email: mockUser.email },
       });
     });
@@ -121,8 +117,7 @@ describe('UsersService', () => {
 
       const result = await service.create(createUserDto);
       expect(result).toEqual(mockUser);
-      expect(repository.create).toHaveBeenCalledWith(createUserDto);
-      expect(repository.save).toHaveBeenCalled();
+      expect(prisma.user.create).toHaveBeenCalled();
     });
   });
 
@@ -135,32 +130,30 @@ describe('UsersService', () => {
       const updatedUser = {
         ...mockUser,
         ...updateDto,
-        hashPassword: jest.fn(),
-        validatePassword: jest.fn().mockResolvedValue(true),
-      } as User;
+      };
 
-      jest.spyOn(repository, 'findOne').mockResolvedValueOnce(mockUser);
-      jest.spyOn(repository, 'merge').mockReturnValueOnce(updatedUser);
-      jest.spyOn(repository, 'save').mockResolvedValueOnce(updatedUser);
+      jest.spyOn(prisma.user, 'findUnique').mockResolvedValueOnce(mockUser);
+      jest.spyOn(prisma.user, 'update').mockResolvedValueOnce(updatedUser as User);
 
       const result = await service.update(mockUser.id, updateDto);
 
       expect(result).toEqual(updatedUser);
-      expect(repository.findOne).toHaveBeenCalledWith({
+      expect(prisma.user.findUnique).toHaveBeenCalledWith({
         where: { id: mockUser.id },
       });
-      expect(repository.merge).toHaveBeenCalledWith(mockUser, updateDto);
-      expect(repository.save).toHaveBeenCalledWith(updatedUser);
+      expect(prisma.user.update).toHaveBeenCalled();
     });
   });
 
   describe('remove', () => {
     it('should remove a user', async () => {
       await service.remove(mockUser.id);
-      expect(repository.findOne).toHaveBeenCalledWith({
+      expect(prisma.user.findUnique).toHaveBeenCalledWith({
         where: { id: mockUser.id },
       });
-      expect(repository.delete).toHaveBeenCalledWith(mockUser.id);
+      expect(prisma.user.delete).toHaveBeenCalledWith({
+        where: { id: mockUser.id },
+      });
     });
   });
 
@@ -170,11 +163,9 @@ describe('UsersService', () => {
         ...mockUser,
         provider: AuthProvider.GOOGLE,
         providerId: 'google123',
-        hashPassword: jest.fn(),
-        validatePassword: jest.fn().mockResolvedValue(true),
       } as User;
-      jest.spyOn(repository, 'findOne').mockResolvedValueOnce(googleUser);
-      jest.spyOn(repository, 'save').mockClear();
+      jest.spyOn(prisma.user, 'findUnique').mockResolvedValueOnce(googleUser);
+      jest.spyOn(prisma.user, 'create').mockClear();
 
       const result = await service.findOrCreateSocialUser(
         mockUser.email,
@@ -184,15 +175,14 @@ describe('UsersService', () => {
       );
 
       expect(result).toEqual(googleUser);
-      expect(repository.findOne).toHaveBeenCalledWith({
+      expect(prisma.user.findUnique).toHaveBeenCalledWith({
         where: { email: mockUser.email },
       });
-      expect(repository.create).not.toHaveBeenCalled();
-      expect(repository.save).not.toHaveBeenCalled();
+      expect(prisma.user.create).not.toHaveBeenCalled();
     });
 
     it('should create new user if not found by email', async () => {
-      jest.spyOn(repository, 'findOne').mockResolvedValueOnce(null);
+      jest.spyOn(prisma.user, 'findUnique').mockResolvedValueOnce(null);
 
       const result = await service.findOrCreateSocialUser(
         'new@example.com',
@@ -202,33 +192,24 @@ describe('UsersService', () => {
       );
 
       expect(result).toEqual(mockUser);
-      expect(repository.create).toHaveBeenCalledWith({
-        email: 'new@example.com',
-        name: 'New Google User',
-        provider: AuthProvider.GOOGLE,
-        providerId: 'google456',
-        role: UserRole.USER,
-      });
-      expect(repository.save).toHaveBeenCalled();
+      expect(prisma.user.create).toHaveBeenCalled();
     });
 
     it('should update provider info if user exists with different provider', async () => {
       const localUser = {
         ...mockUser,
         provider: AuthProvider.LOCAL,
-        hashPassword: jest.fn(),
-        validatePassword: jest.fn().mockResolvedValue(true),
       } as User;
-      jest.spyOn(repository, 'findOne').mockResolvedValueOnce(localUser);
+      jest.spyOn(prisma.user, 'findUnique').mockResolvedValueOnce(localUser);
 
       const result = await service.findOrCreateSocialUser(
         mockUser.email,
-        mockUser.name,
+        mockUser.name || 'Default Name',
         AuthProvider.GOOGLE,
         'google123',
       );
 
-      expect(repository.save).toHaveBeenCalled();
+      expect(prisma.user.update).toHaveBeenCalled();
     });
   });
 
@@ -242,19 +223,14 @@ describe('UsersService', () => {
     };
 
     it('should create a new admin user with valid credentials', async () => {
-      jest.spyOn(repository, 'findOne').mockResolvedValueOnce(null);
-      jest.spyOn(repository, 'create').mockReturnValueOnce(mockAdmin);
-      jest.spyOn(repository, 'save').mockResolvedValueOnce(mockAdmin);
+      jest.spyOn(prisma.user, 'findUnique').mockResolvedValueOnce(null);
+      jest.spyOn(prisma.user, 'create').mockResolvedValueOnce(mockAdmin);
 
       const result = await service.createAdmin(createAdminDto);
 
       expect(result).toEqual(mockAdmin);
       expect(result.role).toBe(UserRole.ADMIN);
-      expect(repository.create).toHaveBeenCalledWith({
-        ...createAdminDto,
-        role: UserRole.ADMIN,
-      });
-      expect(repository.save).toHaveBeenCalled();
+      expect(prisma.user.create).toHaveBeenCalled();
     });
 
     it('should throw UnauthorizedException with invalid admin key', async () => {
@@ -266,7 +242,7 @@ describe('UsersService', () => {
       await expect(service.createAdmin(invalidDto)).rejects.toThrow(
         UnauthorizedException,
       );
-      expect(repository.create).not.toHaveBeenCalled();
+      expect(prisma.user.create).not.toHaveBeenCalled();
     });
 
     it('should throw UnauthorizedException with disallowed email domain', async () => {
@@ -278,16 +254,16 @@ describe('UsersService', () => {
       await expect(service.createAdmin(invalidDomainDto)).rejects.toThrow(
         UnauthorizedException,
       );
-      expect(repository.create).not.toHaveBeenCalled();
+      expect(prisma.user.create).not.toHaveBeenCalled();
     });
 
     it('should throw UnauthorizedException if admin email already exists', async () => {
-      jest.spyOn(repository, 'findOne').mockResolvedValueOnce(mockAdmin);
+      jest.spyOn(prisma.user, 'findUnique').mockResolvedValueOnce(mockAdmin);
 
       await expect(service.createAdmin(createAdminDto)).rejects.toThrow(
         UnauthorizedException,
       );
-      expect(repository.create).not.toHaveBeenCalled();
+      expect(prisma.user.create).not.toHaveBeenCalled();
     });
 
     it('should handle empty allowed domains list', async () => {
@@ -297,19 +273,14 @@ describe('UsersService', () => {
         return null;
       });
 
-      jest.spyOn(repository, 'findOne').mockResolvedValueOnce(null);
-      jest.spyOn(repository, 'create').mockReturnValueOnce(mockAdmin);
-      jest.spyOn(repository, 'save').mockResolvedValueOnce(mockAdmin);
+      jest.spyOn(prisma.user, 'findUnique').mockResolvedValueOnce(null);
+      jest.spyOn(prisma.user, 'create').mockResolvedValueOnce(mockAdmin);
 
       const result = await service.createAdmin(createAdminDto);
 
       expect(result).toEqual(mockAdmin);
       expect(result.role).toBe(UserRole.ADMIN);
-      expect(repository.create).toHaveBeenCalledWith({
-        ...createAdminDto,
-        role: UserRole.ADMIN,
-      });
-      expect(repository.save).toHaveBeenCalled();
+      expect(prisma.user.create).toHaveBeenCalled();
     });
   });
 });

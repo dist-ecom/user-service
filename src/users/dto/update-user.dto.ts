@@ -1,5 +1,5 @@
 import { IsEmail, IsOptional, IsString, IsEnum } from 'class-validator';
-import { UserRole } from '../entities/user.entity';
+import { UserRole } from '@prisma/client';
 import { PartialType } from '@nestjs/mapped-types';
 import { ApiProperty } from '@nestjs/swagger';
 import { CreateUserDto } from './create-user.dto';
