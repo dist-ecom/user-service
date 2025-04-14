@@ -17,16 +17,37 @@ model User {
   role       UserRole @default(USER)
   provider   AuthProvider @default(LOCAL)
   providerId String?
+  isVerified Boolean  @default(false)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
+  
+  // Relation to merchant profile
+  merchantProfile Merchant?
 }
 
 enum UserRole {
   ADMIN
   USER
+  MERCHANT
 }
 
 enum AuthProvider {
   LOCAL
   GOOGLE
+}
+
+// Merchant specific data
+model Merchant {
+  id        String   @id @default(uuid())
+  storeName String
+  location  String
+  storeNumber String?
+  phoneNumber String?
+  description String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relation to user
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 } 

@@ -8,6 +8,8 @@ import * as bcrypt from 'bcrypt';
 
 // Import types from Prisma client
 import { Prisma, User, UserRole, AuthProvider } from '@prisma/client';
+import type { User as UserWithProfile } from '@prisma/client';
+import { CreateMerchantDto } from './dto/create-merchant.dto';
 
 @Injectable()
 export class UsersService {
@@ -22,18 +24,34 @@ export class UsersService {
       createUserDto.password = await bcrypt.hash(createUserDto.password, salt);
     }
     
+    // Set verification status based on role
+    let isVerified = false;
+    if (createUserDto.role === UserRole.ADMIN) {
+      isVerified = true; // Admins are automatically verified
+    } else if (createUserDto.role === UserRole.MERCHANT) {
+      isVerified = false; // Merchants require verification
+    } else {
+      isVerified = true; // Regular users are auto-verified
+    }
+    
     return this.prisma.user.create({
-      data: createUserDto as unknown as Prisma.UserCreateInput,
+      data: {
+        ...createUserDto as unknown as Prisma.UserCreateInput,
+        isVerified,
+      },
     });
   }
 
-  async findAll(): Promise<User[]> {
-    return this.prisma.user.findMany();
+  async findAll(): Promise<any[]> {
+    return this.prisma.user.findMany({
+      include: { merchantProfile: true },
+    });
   }
 
-  async findOne(id: string): Promise<User> {
+  async findOne(id: string, includeMerchantProfile: boolean = false): Promise<UserWithProfile> {
     const user = await this.prisma.user.findUnique({
       where: { id },
+      include: includeMerchantProfile ? { merchantProfile: true } : undefined,
     });
     
     if (!user) {
@@ -140,8 +158,78 @@ export class UsersService {
         password: hashedPassword,
         role: UserRole.ADMIN,
         provider: AuthProvider.LOCAL,
+        isVerified: true, // Admins are automatically verified
       },
     });
+  }
+
+  // New method to create a merchant
+  async createMerchant(createMerchantDto: CreateMerchantDto): Promise<any> {
+    if (createMerchantDto.password && createMerchantDto.provider === AuthProvider.LOCAL) {
+      const salt = 10;
+      createMerchantDto.password = await bcrypt.hash(createMerchantDto.password, salt);
+    }
+    
+    const { 
+      storeName, 
+      location, 
+      storeNumber, 
+      phoneNumber, 
+      description,
+      ...userData 
+    } = createMerchantDto;
+    
+    // Create the user and merchant profile in a transaction
+    const user = await this.prisma.user.create({
+      data: {
+        ...userData as any,
+        role: UserRole.MERCHANT,
+        isVerified: false, // Merchants require verification
+      },
+    });
+      
+    // Create the merchant profile
+    await this.prisma.merchant.create({
+      data: {
+        storeName,
+        location,
+        storeNumber,
+        phoneNumber,
+        description,
+        userId: user.id,
+      },
+    });
+      
+    // Return user with the merchant profile
+    return this.prisma.user.findUnique({
+      where: { id: user.id },
+      include: { merchantProfile: true },
+    });
+  }
+
+  // Method to verify a user
+  async verifyUser(id: string): Promise<User> {
+    const user = await this.findOne(id);
+    
+    return this.prisma.user.update({
+      where: { id },
+      data: {
+        isVerified: true,
+      },
+    });
+  }
+  
+  // Method to check verification status based on role
+  async checkVerificationRequirements(userId: string): Promise<boolean> {
+    const user = await this.findOne(userId);
+    
+    if (user.role === UserRole.ADMIN) {
+      return true; // Admins don't need verification
+    } else if (user.role === UserRole.MERCHANT) {
+      return user.isVerified; // Merchants need to be verified
+    } else {
+      return true; // Regular users don't need verification
+    }
   }
   
   async validatePassword(user: User, password: string): Promise<boolean> {
