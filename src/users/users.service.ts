@@ -1,50 +1,73 @@
 import { Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { User, UserRole, AuthProvider } from './entities/user.entity';
+import { PrismaService } from '../prisma/prisma.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { CreateAdminDto } from './dto/create-admin.dto';
 import { ConfigService } from '@nestjs/config';
+import * as bcrypt from 'bcrypt';
+
+// Import types from Prisma client
+import { Prisma, User, UserRole, AuthProvider } from '@prisma/client';
 
 @Injectable()
 export class UsersService {
   constructor(
-    @InjectRepository(User)
-    private usersRepository: Repository<User>,
+    private prisma: PrismaService,
     private configService: ConfigService,
   ) {}
 
   async create(createUserDto: CreateUserDto): Promise<User> {
-    const user = this.usersRepository.create(createUserDto);
-    return this.usersRepository.save(user);
+    if (createUserDto.password && createUserDto.provider === AuthProvider.LOCAL) {
+      const salt = 10;
+      createUserDto.password = await bcrypt.hash(createUserDto.password, salt);
+    }
+    
+    return this.prisma.user.create({
+      data: createUserDto as unknown as Prisma.UserCreateInput,
+    });
   }
 
   async findAll(): Promise<User[]> {
-    return this.usersRepository.find();
+    return this.prisma.user.findMany();
   }
 
   async findOne(id: string): Promise<User> {
-    const user = await this.usersRepository.findOne({ where: { id } });
+    const user = await this.prisma.user.findUnique({
+      where: { id },
+    });
+    
     if (!user) {
       throw new NotFoundException(`User with ID ${id} not found`);
     }
+    
     return user;
   }
 
   async findByEmail(email: string): Promise<User | null> {
-    return this.usersRepository.findOne({ where: { email } });
+    return this.prisma.user.findUnique({
+      where: { email },
+    });
   }
 
   async update(id: string, updateUserDto: UpdateUserDto): Promise<User> {
-    const user = await this.findOne(id);
-    const mergedUser = this.usersRepository.merge(user, updateUserDto);
-    return this.usersRepository.save(mergedUser);
+    await this.findOne(id);
+    
+    if (updateUserDto.password && updateUserDto.provider === AuthProvider.LOCAL) {
+      const salt = 10;
+      updateUserDto.password = await bcrypt.hash(updateUserDto.password, salt);
+    }
+    
+    return this.prisma.user.update({
+      where: { id },
+      data: updateUserDto as unknown as Prisma.UserUpdateInput,
+    });
   }
 
   async remove(id: string): Promise<void> {
-    const user = await this.findOne(id);
-    await this.usersRepository.delete(user.id);
+    await this.findOne(id);
+    await this.prisma.user.delete({
+      where: { id },
+    });
   }
 
   async findOrCreateSocialUser(
@@ -56,14 +79,15 @@ export class UsersService {
     const user = await this.findByEmail(email);
 
     if (!user) {
-      const newUser = this.usersRepository.create({
-        email,
-        name,
-        provider,
-        providerId,
-        role: UserRole.USER,
+      return this.prisma.user.create({
+        data: {
+          email,
+          name,
+          provider,
+          providerId,
+          role: UserRole.USER,
+        },
       });
-      return this.usersRepository.save(newUser);
     }
 
     // Return existing user if provider and providerId match
@@ -72,9 +96,13 @@ export class UsersService {
     }
 
     // Update provider info if either provider or providerId don't match
-    user.provider = provider;
-    user.providerId = providerId;
-    return this.usersRepository.save(user);
+    return this.prisma.user.update({
+      where: { id: user.id },
+      data: {
+        provider,
+        providerId,
+      },
+    });
   }
 
   async createAdmin(createAdminDto: CreateAdminDto): Promise<User> {
@@ -100,12 +128,26 @@ export class UsersService {
       throw new UnauthorizedException('Admin with this email already exists');
     }
 
-    // Create admin user
-    const admin = this.usersRepository.create({
-      ...createAdminDto,
-      role: UserRole.ADMIN,
-    });
+    // Hash password
+    const salt = 10;
+    const hashedPassword = await bcrypt.hash(createAdminDto.password, salt);
 
-    return this.usersRepository.save(admin);
+    // Create admin user
+    return this.prisma.user.create({
+      data: {
+        email: createAdminDto.email,
+        name: createAdminDto.name,
+        password: hashedPassword,
+        role: UserRole.ADMIN,
+        provider: AuthProvider.LOCAL,
+      },
+    });
+  }
+  
+  async validatePassword(user: User, password: string): Promise<boolean> {
+    if (user.provider !== AuthProvider.LOCAL) {
+      return false;
+    }
+    return await bcrypt.compare(password, user.password || '');
   }
 }

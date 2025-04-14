@@ -3,7 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { UnauthorizedException } from '@nestjs/common';
 import { JwtStrategy } from './jwt.strategy';
 import { UsersService } from '../../users/users.service';
-import { User, UserRole, AuthProvider } from '../../users/entities/user.entity';
+import { User, UserRole, AuthProvider } from '@prisma/client';
 
 describe('JwtStrategy', () => {
   let strategy: JwtStrategy;
@@ -21,7 +21,7 @@ describe('JwtStrategy', () => {
     updatedAt: new Date(),
     hashPassword: async () => {},
     validatePassword: async () => true,
-  } as unknown as User;
+  } as User;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({

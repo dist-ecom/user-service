@@ -6,7 +6,7 @@ import {
   MinLength,
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
-import { UserRole, AuthProvider } from '../entities/user.entity';
+import { UserRole, AuthProvider } from '@prisma/client';
 
 export class CreateUserDto {
   @ApiProperty({ example: 'John Doe', description: 'The name of the user' })

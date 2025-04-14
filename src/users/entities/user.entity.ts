@@ -8,16 +8,7 @@ import {
 } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { ApiProperty } from '@nestjs/swagger';
-
-export enum UserRole {
-  ADMIN = 'admin',
-  USER = 'user',
-}
-
-export enum AuthProvider {
-  LOCAL = 'local',
-  GOOGLE = 'google',
-}
+import { UserRole, AuthProvider } from '@prisma/client';
 
 @Entity()
 export class User {

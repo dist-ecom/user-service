@@ -1,8 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { UsersController } from './users.controller';
 import { UsersService } from './users.service';
-import { User, UserRole, AuthProvider } from './entities/user.entity';
 import { CreateAdminDto } from './dto/create-admin.dto';
+import { User, UserRole, AuthProvider } from '@prisma/client';
 
 const mockUser = {
   id: '123e4567-e89b-12d3-a456-426614174000',
