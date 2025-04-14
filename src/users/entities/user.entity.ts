@@ -5,10 +5,12 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   BeforeInsert,
+  OneToOne,
 } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { ApiProperty } from '@nestjs/swagger';
 import { UserRole, AuthProvider } from '@prisma/client';
+import { Merchant } from './merchant.entity';
 
 @Entity()
 export class User {
@@ -47,6 +49,22 @@ export class User {
   @Column({ nullable: true })
   providerId: string;
 
+  @ApiProperty({ description: 'Whether the user is verified', example: false })
+  @Column({ default: false })
+  isVerified: boolean;
+
+  @ApiProperty({ description: 'Whether the email is verified', example: false })
+  @Column({ default: false })
+  isEmailVerified: boolean;
+
+  @ApiProperty({ description: 'Email verification token', required: false })
+  @Column({ nullable: true, unique: true })
+  emailVerifyToken: string;
+
+  @ApiProperty({ description: 'Email verification token expiry date', required: false })
+  @Column({ nullable: true })
+  emailVerifyExpires: Date;
+
   @ApiProperty({ description: 'The timestamp when the user was created' })
   @CreateDateColumn()
   createdAt: Date;
@@ -54,6 +72,10 @@ export class User {
   @ApiProperty({ description: 'The timestamp when the user was last updated' })
   @UpdateDateColumn()
   updatedAt: Date;
+
+  @ApiProperty({ description: 'Merchant profile for this user if they are a merchant', required: false })
+  @OneToOne(() => Merchant, merchant => merchant.user, { nullable: true })
+  merchantProfile: Merchant;
 
   @BeforeInsert()
   async hashPassword(): Promise<void> {

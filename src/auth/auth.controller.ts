@@ -5,6 +5,7 @@ import {
   Request,
   Get,
   Body,
+  Query,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { AuthService } from './auth.service';
@@ -17,8 +18,10 @@ import {
   ApiResponse, 
   ApiBody,
   ApiBearerAuth,
-  ApiExcludeEndpoint
+  ApiExcludeEndpoint,
+  ApiQuery,
 } from '@nestjs/swagger';
+import { JwtAuthGuard } from './guards/jwt-auth.guard';
 
 // Define the request interface with Prisma User type
 interface RequestWithUser {
@@ -29,8 +32,8 @@ interface RequestWithUser {
 @Controller('auth')
 export class AuthController {
   constructor(
-    private authService: AuthService,
-    private usersService: UsersService,
+    private readonly authService: AuthService,
+    private readonly usersService: UsersService,
   ) {}
 
   @Post('register')
@@ -126,5 +129,34 @@ export class AuthController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   getProfile(@Request() req: RequestWithUser) {
     return req.user;
+  }
+
+  @Post('verify-email/send')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Send a verification email to the user' })
+  @ApiBody({
+    schema: {
+      properties: {
+        email: { type: 'string', example: 'user@example.com' },
+      },
+    },
+  })
+  @ApiResponse({ status: 200, description: 'Verification email sent successfully' })
+  @ApiResponse({ status: 404, description: 'User not found' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  async sendVerificationEmail(@Body('email') email: string) {
+    await this.usersService.sendVerificationEmail(email);
+    return { message: 'Verification email sent successfully' };
+  }
+
+  @Get('verify-email')
+  @ApiOperation({ summary: 'Verify user email with token' })
+  @ApiQuery({ name: 'token', type: 'string', required: true })
+  @ApiResponse({ status: 200, description: 'Email verified successfully' })
+  @ApiResponse({ status: 400, description: 'Invalid verification token' })
+  async verifyEmail(@Query('token') token: string) {
+    await this.usersService.verifyEmail(token);
+    return { message: 'Email verified successfully' };
   }
 }

@@ -24,6 +24,7 @@ import {
   ApiBearerAuth
 } from '@nestjs/swagger';
 import { CreateAdminDto } from './dto/create-admin.dto';
+import { CreateMerchantDto } from './dto/create-merchant.dto';
 
 @ApiTags('users')
 @ApiBearerAuth()
@@ -80,6 +81,43 @@ export class UsersController {
     return this.usersService.createAdmin(createAdminDto);
   }
 
+  @Post('merchant')
+  @ApiOperation({ summary: 'Register a new merchant' })
+  @ApiBody({ type: CreateMerchantDto })
+  @ApiResponse({ 
+    status: 201, 
+    description: 'The merchant has been successfully created.',
+    schema: {
+      properties: {
+        id: { type: 'string', example: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11' },
+        name: { type: 'string', example: 'Merchant Store' },
+        email: { type: 'string', example: 'merchant@example.com' },
+        role: { type: 'string', example: 'merchant' },
+        provider: { type: 'string', example: 'local' },
+        isVerified: { type: 'boolean', example: false },
+        createdAt: { type: 'string', example: '2023-01-01T00:00:00Z' },
+        updatedAt: { type: 'string', example: '2023-01-01T00:00:00Z' },
+        merchantProfile: {
+          type: 'object',
+          properties: {
+            id: { type: 'string', example: 'b1eebc99-9c0b-4ef8-bb6d-6bb9bd380a22' },
+            storeName: { type: 'string', example: 'My Awesome Store' },
+            location: { type: 'string', example: '123 Main St, City, Country' },
+            storeNumber: { type: 'string', example: 'A-123' },
+            phoneNumber: { type: 'string', example: '+1-555-123-4567' },
+            description: { type: 'string', example: 'We sell high-quality products' },
+            createdAt: { type: 'string', example: '2023-01-01T00:00:00Z' },
+            updatedAt: { type: 'string', example: '2023-01-01T00:00:00Z' }
+          }
+        }
+      }
+    }
+  })
+  @ApiResponse({ status: 400, description: 'Bad Request.' })
+  createMerchant(@Body() createMerchantDto: CreateMerchantDto) {
+    return this.usersService.createMerchant(createMerchantDto);
+  }
+
   @Get()
   @ApiOperation({ summary: 'Get all users (admin only)' })
   @ApiResponse({ 
@@ -122,14 +160,27 @@ export class UsersController {
         role: { type: 'string' },
         provider: { type: 'string' },
         providerId: { type: 'string' },
+        isVerified: { type: 'boolean' },
         createdAt: { type: 'string' },
-        updatedAt: { type: 'string' }
+        updatedAt: { type: 'string' },
+        merchantProfile: {
+          type: 'object',
+          nullable: true,
+          properties: {
+            id: { type: 'string' },
+            storeName: { type: 'string' },
+            location: { type: 'string' },
+            storeNumber: { type: 'string', nullable: true },
+            phoneNumber: { type: 'string', nullable: true },
+            description: { type: 'string', nullable: true }
+          }
+        }
       }
     }
   })
   @ApiResponse({ status: 404, description: 'User not found.' })
   findOne(@Param('id') id: string) {
-    return this.usersService.findOne(id);
+    return this.usersService.findOne(id, true);
   }
 
   @Patch(':id')
@@ -153,5 +204,35 @@ export class UsersController {
   @UseGuards(RolesGuard)
   remove(@Param('id') id: string) {
     return this.usersService.remove(id);
+  }
+
+  @Patch(':id/verify')
+  @ApiOperation({ summary: 'Verify a user (admin only)' })
+  @ApiParam({ name: 'id', description: 'User ID to verify', example: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11' })
+  @ApiResponse({ status: 200, description: 'The user has been successfully verified.' })
+  @ApiResponse({ status: 403, description: 'Forbidden.' })
+  @ApiResponse({ status: 404, description: 'User not found.' })
+  @Roles(UserRole.ADMIN)
+  @UseGuards(RolesGuard)
+  verifyUser(@Param('id') id: string) {
+    return this.usersService.verifyUser(id);
+  }
+
+  @Get('verification/status/:id')
+  @ApiOperation({ summary: 'Check user verification status' })
+  @ApiParam({ name: 'id', description: 'User ID', example: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11' })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'Returns whether the user meets verification requirements',
+    schema: {
+      properties: {
+        isVerified: { type: 'boolean' }
+      }
+    }
+  })
+  @ApiResponse({ status: 404, description: 'User not found.' })
+  checkVerificationStatus(@Param('id') id: string) {
+    return this.usersService.checkVerificationRequirements(id)
+      .then(isVerified => ({ isVerified }));
   }
 }

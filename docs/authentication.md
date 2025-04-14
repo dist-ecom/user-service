@@ -3,11 +3,13 @@
 This document describes the different authentication methods supported by the User Service and how they work.
 
 ## Table of Contents
+
 - [JWT Authentication](#jwt-authentication)
 - [Local Authentication](#local-authentication)
 - [Google OAuth Authentication](#google-oauth-authentication)
 - [Role-Based Authorization](#role-based-authorization)
 - [Security Considerations](#security-considerations)
+- [Email Verification](#email-verification)
 
 ## JWT Authentication
 
@@ -16,6 +18,7 @@ JWT (JSON Web Token) is the primary authentication mechanism used by the User Se
 ### Token Structure
 
 The JWT token contains three parts:
+
 1. **Header**: Contains the token type and algorithm used
 2. **Payload**: Contains claims about the user (user ID, email, role, expiration time)
 3. **Signature**: Used to verify the token's authenticity
@@ -75,6 +78,7 @@ The User Service supports authentication via Google OAuth 2.0.
 ### User Mapping
 
 When a user authenticates with Google OAuth:
+
 1. The system checks if a user with the same email already exists
 2. If found, the user is linked to the Google account
 3. If not found, a new user is created with information from Google
@@ -86,12 +90,14 @@ The User Service implements role-based access control to protect certain endpoin
 ### User Roles
 
 The system supports the following roles:
+
 - **User**: Regular user with access to their own data
 - **Admin**: Administrative user with access to all data and actions
 
 ### Role Authorization
 
 Role-based authorization is implemented using guards:
+
 1. The `JwtAuthGuard` verifies that the request has a valid JWT token
 2. The `RolesGuard` checks if the user has the required role to access the endpoint
 3. The `@Roles()` decorator is used to specify which roles can access each endpoint
@@ -164,4 +170,46 @@ googleAuthCallback(@Request() req) {
   // Handles Google OAuth callback
   return req.user;
 }
-``` 
+```
+
+## Email Verification
+
+The system implements email verification to ensure users have access to the email addresses they register with. This is especially important for merchant accounts that require verification.
+
+### Verification Process
+
+1. When a user registers (or a merchant account is created), the system:
+   - Creates the user account with `isEmailVerified` set to `false`
+   - Generates a unique verification token and stores it with an expiration time
+   - Sends a verification email to the user's email address
+
+2. The verification email contains a link with the verification token:
+   ```
+   http://[base-url]/auth/verify-email?token=[verification-token]
+   ```
+
+3. When the user clicks the link, the system:
+   - Validates the token and checks if it's still valid
+   - Updates the user's account, setting `isEmailVerified` to `true`
+   - Invalidates the verification token
+
+4. If the token is expired or invalid, the user can request a new verification email through the application.
+
+### API Endpoints
+
+- **Send Verification Email**: `POST /auth/verify-email/send`
+  - Requires authentication
+  - Sends a new verification email to the authenticated user
+
+- **Verify Email**: `GET /auth/verify-email?token=[token]`
+  - Public endpoint
+  - Verifies the user's email using the provided token
+
+### Merchant Verification
+
+Merchant accounts require additional verification:
+
+- Email verification is required for all merchant accounts
+- The `isVerified` flag on merchant accounts is initially set to `false`
+- Admin approval is required to set `isVerified` to `true` for merchant accounts
+- Merchants cannot access certain features until their account is fully verified
