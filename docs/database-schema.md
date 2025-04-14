@@ -4,21 +4,18 @@ This document provides details about the database structure used in the User Ser
 
 ## Entity Relationship Diagram
 
-```
-┌────────────────────┐
-│       User         │
-├────────────────────┤
-│ id: UUID (PK)      │
-│ name: String       │
-│ email: String      │
-│ password: String   │
-│ role: Enum         │
-│ provider: Enum     │
-│ providerId: String │
-│ createdAt: Date    │
-│ updatedAt: Date    │
-└────────────────────┘
-```
+| Column      | Type     | Description        |
+|-------------|----------|--------------------|
+| id          | UUID (PK)| Primary key        |
+| name        | String   | User's name        |
+| email       | String   | User's email       |
+| password    | String   | Hashed password    |
+| role        | Enum     | User role          |
+| provider    | Enum     | Auth provider type |
+| providerId  | String   | Provider user ID   |
+| createdAt   | Date     | Account creation   |
+| updatedAt   | Date     | Last update        |
+
 
 ## Database Tables
 

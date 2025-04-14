@@ -3,6 +3,11 @@
   "version": "1.0.0",
   "description": "API documentation for the ecommerce platform user service",
   "baseUrl": "http://localhost:3000",
+  "rateLimiting": {
+    "windowMs": 900000,
+    "max": 100,
+    "message": "Too many requests, please try again later"
+  },
   "endpoints": {
     "auth": {
       "register": {
@@ -136,6 +141,64 @@
             }
           }
         }
+      },
+      "verifyEmail": {
+        "path": "/auth/verify-email",
+        "method": "GET",
+        "description": "Verify user email with token",
+        "authentication": "None",
+        "queryParameters": {
+          "token": {
+            "type": "string",
+            "description": "Email verification token",
+            "required": true
+          }
+        },
+        "response": {
+          "success": {
+            "statusCode": 200,
+            "body": {
+              "message": "Email verified successfully"
+            }
+          },
+          "error": {
+            "statusCode": 400,
+            "body": {
+              "message": "Invalid or expired token",
+              "error": "Bad Request"
+            }
+          }
+        }
+      },
+      "sendVerificationEmail": {
+        "path": "/auth/verify-email/send",
+        "method": "POST",
+        "description": "Send email verification link",
+        "authentication": "JWT",
+        "headers": {
+          "Authorization": "Bearer {token}"
+        },
+        "request": {
+          "contentType": "application/json",
+          "body": {
+            "email": "string"
+          }
+        },
+        "response": {
+          "success": {
+            "statusCode": 200,
+            "body": {
+              "message": "Verification email sent"
+            }
+          },
+          "error": {
+            "statusCode": 400,
+            "body": {
+              "message": "User not found",
+              "error": "Bad Request"
+            }
+          }
+        }
       }
     },
     "users": {
@@ -230,21 +293,51 @@
         "headers": {
           "Authorization": "Bearer {token}"
         },
+        "queryParameters": {
+          "page": {
+            "type": "number",
+            "description": "Page number (default: 1)",
+            "required": false
+          },
+          "limit": {
+            "type": "number",
+            "description": "Number of items per page (default: 10)",
+            "required": false
+          },
+          "sort": {
+            "type": "string",
+            "description": "Sort field (default: createdAt)",
+            "required": false
+          },
+          "order": {
+            "type": "string",
+            "description": "Sort order (asc/desc, default: desc)",
+            "required": false
+          }
+        },
         "response": {
           "success": {
             "statusCode": 200,
-            "body": [
-              {
-                "id": "string",
-                "name": "string",
-                "email": "string",
-                "role": "string",
-                "provider": "string",
-                "providerId": "string",
-                "createdAt": "string",
-                "updatedAt": "string"
+            "body": {
+              "data": [
+                {
+                  "id": "string",
+                  "name": "string",
+                  "email": "string",
+                  "role": "string",
+                  "provider": "string",
+                  "providerId": "string",
+                  "createdAt": "string",
+                  "updatedAt": "string"
+                }
+              ],
+              "meta": {
+                "total": "number",
+                "page": "number",
+                "limit": "number",
+                "totalPages": "number"
               }
-            ]
+            }
           },
           "error": {
             "statusCode": 403,
@@ -382,6 +475,221 @@
             }
           }
         }
+      },
+      "merchants": {
+        "create": {
+          "path": "/users/merchants",
+          "method": "POST",
+          "description": "Register a new merchant",
+          "authentication": "None",
+          "request": {
+            "contentType": "application/json",
+            "body": {
+              "name": "string",
+              "email": "string",
+              "password": "string",
+              "storeName": "string",
+              "location": "string",
+              "storeNumber": "string",
+              "phoneNumber": "string",
+              "description": "string"
+            }
+          },
+          "response": {
+            "success": {
+              "statusCode": 201,
+              "body": {
+                "user": {
+                  "id": "string",
+                  "name": "string",
+                  "email": "string",
+                  "role": "merchant",
+                  "isVerified": false,
+                  "isEmailVerified": false,
+                  "merchantProfile": {
+                    "id": "string",
+                    "storeName": "string",
+                    "location": "string",
+                    "storeNumber": "string",
+                    "phoneNumber": "string",
+                    "description": "string"
+                  }
+                }
+              }
+            },
+            "error": {
+              "statusCode": 400,
+              "body": {
+                "message": "Bad request",
+                "error": "Bad Request"
+              }
+            }
+          }
+        },
+        "findOne": {
+          "path": "/users/merchants/{id}",
+          "method": "GET",
+          "description": "Get merchant profile by ID",
+          "authentication": "JWT",
+          "headers": {
+            "Authorization": "Bearer {token}"
+          },
+          "parameters": {
+            "id": {
+              "type": "string",
+              "description": "Merchant ID",
+              "required": true
+            }
+          },
+          "response": {
+            "success": {
+              "statusCode": 200,
+              "body": {
+                "id": "string",
+                "name": "string",
+                "email": "string",
+                "role": "merchant",
+                "isVerified": "boolean",
+                "isEmailVerified": "boolean",
+                "merchantProfile": {
+                  "id": "string",
+                  "storeName": "string",
+                  "location": "string",
+                  "storeNumber": "string",
+                  "phoneNumber": "string",
+                  "description": "string"
+                }
+              }
+            },
+            "error": {
+              "statusCode": 404,
+              "body": {
+                "message": "Merchant not found",
+                "error": "Not Found"
+              }
+            }
+          }
+        },
+        "verify": {
+          "path": "/users/merchants/{id}/verify",
+          "method": "PATCH",
+          "description": "Verify a merchant account (admin only)",
+          "authentication": "JWT + Admin Role",
+          "headers": {
+            "Authorization": "Bearer {token}"
+          },
+          "parameters": {
+            "id": {
+              "type": "string",
+              "description": "Merchant ID",
+              "required": true
+            }
+          },
+          "response": {
+            "success": {
+              "statusCode": 200,
+              "body": {
+                "id": "string",
+                "isVerified": true
+              }
+            },
+            "error": {
+              "statusCode": 403,
+              "body": {
+                "message": "Forbidden",
+                "error": "Forbidden"
+              }
+            }
+          }
+        },
+        "update": {
+          "path": "/users/merchants/{id}",
+          "method": "PATCH",
+          "description": "Update merchant profile",
+          "authentication": "JWT",
+          "headers": {
+            "Authorization": "Bearer {token}"
+          },
+          "parameters": {
+            "id": {
+              "type": "string",
+              "description": "Merchant ID",
+              "required": true
+            }
+          },
+          "request": {
+            "contentType": "application/json",
+            "body": {
+              "storeName": "string",
+              "location": "string",
+              "storeNumber": "string",
+              "phoneNumber": "string",
+              "description": "string"
+            }
+          },
+          "response": {
+            "success": {
+              "statusCode": 200,
+              "body": {
+                "id": "string",
+                "merchantProfile": {
+                  "id": "string",
+                  "storeName": "string",
+                  "location": "string",
+                  "storeNumber": "string",
+                  "phoneNumber": "string",
+                  "description": "string"
+                }
+              }
+            },
+            "error": {
+              "statusCode": 400,
+              "body": {
+                "message": "Bad request",
+                "error": "Bad Request"
+              }
+            }
+          }
+        },
+        "findAll": {
+          "path": "/users/merchants",
+          "method": "GET",
+          "description": "Get all merchants (admin only)",
+          "authentication": "JWT + Admin Role",
+          "headers": {
+            "Authorization": "Bearer {token}"
+          },
+          "response": {
+            "success": {
+              "statusCode": 200,
+              "body": [
+                {
+                  "id": "string",
+                  "name": "string",
+                  "email": "string",
+                  "role": "merchant",
+                  "isVerified": "boolean",
+                  "isEmailVerified": "boolean",
+                  "merchantProfile": {
+                    "id": "string",
+                    "storeName": "string",
+                    "location": "string",
+                    "storeNumber": "string",
+                    "phoneNumber": "string",
+                    "description": "string"
+                  }
+                }
+              ]
+            },
+            "error": {
+              "statusCode": 403,
+              "body": {
+                "message": "Forbidden",
+                "error": "Forbidden"
+              }
+            }
+          }
+        }
       }
     }
   },
@@ -389,11 +697,13 @@
     "jwt": {
       "type": "Bearer",
       "description": "JWT token obtained from login or register endpoints",
-      "header": "Authorization: Bearer {token}"
+      "header": "Authorization: Bearer {token}",
+      "tokenExpiration": "24h"
     },
     "roles": {
       "user": "Regular user with limited permissions",
-      "admin": "Administrator with full access"
+      "admin": "Administrator with full access",
+      "merchant": "Merchant with store management capabilities"
     }
   },
   "dataModels": {
@@ -402,9 +712,26 @@
       "name": "string",
       "email": "string",
       "password": "string (hashed)",
-      "role": "enum (user, admin)",
+      "role": "enum (user, admin, merchant)",
       "provider": "enum (local, google)",
       "providerId": "string",
+      "createdAt": "Date",
+      "updatedAt": "Date",
+      "lastLoginAt": "Date",
+      "isActive": "boolean",
+      "isVerified": "boolean",
+      "isEmailVerified": "boolean",
+      "emailVerifyToken": "string",
+      "emailVerifyExpires": "Date"
+    },
+    "MerchantProfile": {
+      "id": "string (UUID)",
+      "userId": "string (UUID)",
+      "storeName": "string",
+      "location": "string",
+      "storeNumber": "string",
+      "phoneNumber": "string",
+      "description": "string",
       "createdAt": "Date",
       "updatedAt": "Date"
     },
@@ -412,15 +739,27 @@
       "name": "string",
       "email": "string",
       "password": "string",
-      "role": "enum (user, admin)",
+      "role": "enum (user, admin, merchant)",
       "provider": "enum (local, google)",
       "providerId": "string"
+    },
+    "CreateMerchantDto": {
+      "name": "string",
+      "email": "string",
+      "password": "string",
+      "provider": "enum (local, google)",
+      "storeName": "string",
+      "location": "string",
+      "storeNumber": "string",
+      "phoneNumber": "string",
+      "description": "string"
     },
     "UpdateUserDto": {
       "name": "string",
       "email": "string",
       "password": "string",
-      "role": "enum (user, admin)"
+      "role": "enum (user, admin, merchant)",
+      "isActive": "boolean"
     },
     "CreateAdminDto": {
       "name": "string",
@@ -435,7 +774,11 @@
     "401": "Unauthorized - Invalid credentials or token",
     "403": "Forbidden - Insufficient permissions",
     "404": "Not Found - Resource not found",
-    "500": "Internal Server Error - Server-side error"
+    "409": "Conflict - Resource already exists",
+    "422": "Unprocessable Entity - Validation error",
+    "429": "Too Many Requests - Rate limit exceeded",
+    "500": "Internal Server Error - Server-side error",
+    "503": "Service Unavailable - Service temporarily unavailable"
   },
   "swagger": {
     "url": "/api",
