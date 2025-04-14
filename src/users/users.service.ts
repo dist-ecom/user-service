@@ -1,10 +1,12 @@
-import { Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import { Injectable, NotFoundException, UnauthorizedException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { CreateAdminDto } from './dto/create-admin.dto';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
+import { randomBytes } from 'crypto';
+import { MailService } from '../mail/mail.service';
 
 // Import types from Prisma client
 import { Prisma, User, UserRole, AuthProvider } from '@prisma/client';
@@ -16,6 +18,7 @@ export class UsersService {
   constructor(
     private prisma: PrismaService,
     private configService: ConfigService,
+    private mailService: MailService,
   ) {}
 
   async create(createUserDto: CreateUserDto): Promise<User> {
@@ -26,20 +29,33 @@ export class UsersService {
     
     // Set verification status based on role
     let isVerified = false;
+    let isEmailVerified = false;
+    
     if (createUserDto.role === UserRole.ADMIN) {
-      isVerified = true; // Admins are automatically verified
-    } else if (createUserDto.role === UserRole.MERCHANT) {
-      isVerified = false; // Merchants require verification
+      // Admins are automatically verified and don't need email verification
+      isVerified = true;
+      isEmailVerified = true;
     } else {
-      isVerified = true; // Regular users are auto-verified
+      // Regular users and merchants require verification
+      isVerified = createUserDto.role === UserRole.USER; // Regular users are auto-verified for account
+      isEmailVerified = false; // All non-admin users need email verification
     }
     
-    return this.prisma.user.create({
+    // Create the user
+    const user = await this.prisma.user.create({
       data: {
         ...createUserDto as unknown as Prisma.UserCreateInput,
         isVerified,
+        isEmailVerified,
       },
     });
+    
+    // Send verification email for non-admin users
+    if (createUserDto.role !== UserRole.ADMIN) {
+      await this.sendVerificationEmail(user.email);
+    }
+    
+    return user;
   }
 
   async findAll(): Promise<any[]> {
@@ -159,6 +175,7 @@ export class UsersService {
         role: UserRole.ADMIN,
         provider: AuthProvider.LOCAL,
         isVerified: true, // Admins are automatically verified
+        isEmailVerified: true, // Admins don't need email verification
       },
     });
   }
@@ -179,15 +196,16 @@ export class UsersService {
       ...userData 
     } = createMerchantDto;
     
-    // Create the user and merchant profile in a transaction
+    // Create the user
     const user = await this.prisma.user.create({
       data: {
         ...userData as any,
         role: UserRole.MERCHANT,
         isVerified: false, // Merchants require verification
+        isEmailVerified: false, // Merchants need email verification
       },
     });
-      
+    
     // Create the merchant profile
     await this.prisma.merchant.create({
       data: {
@@ -199,7 +217,10 @@ export class UsersService {
         userId: user.id,
       },
     });
-      
+    
+    // Send verification email
+    await this.sendVerificationEmail(user.email);
+    
     // Return user with the merchant profile
     return this.prisma.user.findUnique({
       where: { id: user.id },
@@ -237,5 +258,55 @@ export class UsersService {
       return false;
     }
     return await bcrypt.compare(password, user.password || '');
+  }
+
+  async sendVerificationEmail(email: string): Promise<void> {
+    const user = await this.findByEmail(email);
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    // Generate token and expiration date (24 hours)
+    const token = randomBytes(32).toString('hex');
+    const tokenExpires = new Date();
+    tokenExpires.setHours(tokenExpires.getHours() + 24);
+
+    // Update user with verification token details
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: {
+        emailVerifyToken: token,
+        emailVerifyExpires: tokenExpires,
+      },
+    });
+
+    // Send verification email
+    await this.mailService.sendVerificationEmail(user.email, user.name || 'User', token);
+  }
+
+  async verifyEmail(token: string): Promise<void> {
+    // Find user with this token
+    const user = await this.prisma.user.findFirst({
+      where: { 
+        emailVerifyToken: token,
+        emailVerifyExpires: {
+          gt: new Date(), // Token must not be expired
+        },
+      },
+    });
+
+    if (!user) {
+      throw new BadRequestException('Invalid or expired verification token');
+    }
+
+    // Update user as verified
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: {
+        emailVerifyToken: null,
+        emailVerifyExpires: null,
+        isEmailVerified: true,
+      },
+    });
   }
 }

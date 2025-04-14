@@ -53,6 +53,18 @@ export class User {
   @Column({ default: false })
   isVerified: boolean;
 
+  @ApiProperty({ description: 'Whether the email is verified', example: false })
+  @Column({ default: false })
+  isEmailVerified: boolean;
+
+  @ApiProperty({ description: 'Email verification token', required: false })
+  @Column({ nullable: true, unique: true })
+  emailVerifyToken: string;
+
+  @ApiProperty({ description: 'Email verification token expiry date', required: false })
+  @Column({ nullable: true })
+  emailVerifyExpires: Date;
+
   @ApiProperty({ description: 'The timestamp when the user was created' })
   @CreateDateColumn()
   createdAt: Date;

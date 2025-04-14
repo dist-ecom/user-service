@@ -18,6 +18,12 @@ model User {
   provider   AuthProvider @default(LOCAL)
   providerId String?
   isVerified Boolean  @default(false)
+  
+  // Email verification fields
+  isEmailVerified    Boolean  @default(false)
+  emailVerifyToken   String?  @unique
+  emailVerifyExpires DateTime?
+  
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
   
