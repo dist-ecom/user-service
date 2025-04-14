@@ -1,7 +1,7 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '../users/users.service';
-import { User } from '@prisma/client';
+import { User, AuthProvider } from '@prisma/client';
 
 interface OAuthUser {
   emails?: { value: string }[];
@@ -42,7 +42,7 @@ export class AuthService {
     };
   }
 
-  async validateOAuthLogin(profile: OAuthUser, provider: string) {
+  async validateOAuthLogin(profile: OAuthUser, provider: AuthProvider) {
     const { emails, displayName, id } = profile;
 
     if (!emails || emails.length === 0) {

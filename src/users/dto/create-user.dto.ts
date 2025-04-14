@@ -4,7 +4,6 @@ import {
   IsOptional,
   IsEnum,
   MinLength,
-  IsString,
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { UserRole, AuthProvider } from '@prisma/client';
@@ -37,8 +36,7 @@ export class CreateUserDto {
   })
   @IsEnum(UserRole)
   @IsOptional()
-  @IsString()
-  role?: string;
+  role?: UserRole;
 
   @ApiProperty({ 
     enum: AuthProvider, 
@@ -48,8 +46,7 @@ export class CreateUserDto {
   })
   @IsEnum(AuthProvider)
   @IsOptional()
-  @IsString()
-  provider?: string;
+  provider?: AuthProvider;
 
   @ApiProperty({ 
     example: '123456789', 

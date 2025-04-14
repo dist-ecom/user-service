@@ -7,7 +7,7 @@ import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
 
 // Import types from Prisma client
-import { Prisma, User } from '@prisma/client';
+import { Prisma, User, UserRole, AuthProvider } from '@prisma/client';
 
 @Injectable()
 export class UsersService {
@@ -17,16 +17,13 @@ export class UsersService {
   ) {}
 
   async create(createUserDto: CreateUserDto): Promise<User> {
-    if (createUserDto.password && createUserDto.provider?.toString() === 'LOCAL') {
+    if (createUserDto.password && createUserDto.provider === AuthProvider.LOCAL) {
       const salt = 10;
       createUserDto.password = await bcrypt.hash(createUserDto.password, salt);
     }
     
     return this.prisma.user.create({
-      data: {
-        ...createUserDto,
-        provider: createUserDto.provider as Prisma.UserCreateInput['provider'],
-      } as Prisma.UserCreateInput,
+      data: createUserDto as unknown as Prisma.UserCreateInput,
     });
   }
 
@@ -55,17 +52,14 @@ export class UsersService {
   async update(id: string, updateUserDto: UpdateUserDto): Promise<User> {
     await this.findOne(id);
     
-    if (updateUserDto.password && updateUserDto.provider?.toString() === 'LOCAL') {
+    if (updateUserDto.password && updateUserDto.provider === AuthProvider.LOCAL) {
       const salt = 10;
       updateUserDto.password = await bcrypt.hash(updateUserDto.password, salt);
     }
     
     return this.prisma.user.update({
       where: { id },
-      data: {
-        ...updateUserDto,
-        provider: updateUserDto.provider as Prisma.UserUpdateInput['provider'],
-      } as Prisma.UserUpdateInput,
+      data: updateUserDto as unknown as Prisma.UserUpdateInput,
     });
   }
 
@@ -79,7 +73,7 @@ export class UsersService {
   async findOrCreateSocialUser(
     email: string,
     name: string,
-    provider: string,
+    provider: AuthProvider,
     providerId: string,
   ): Promise<User> {
     const user = await this.findByEmail(email);
@@ -89,9 +83,9 @@ export class UsersService {
         data: {
           email,
           name,
-          provider: provider as Prisma.UserCreateInput['provider'],
+          provider,
           providerId,
-          role: 'USER' as Prisma.UserCreateInput['role'],
+          role: UserRole.USER,
         },
       });
     }
@@ -105,7 +99,7 @@ export class UsersService {
     return this.prisma.user.update({
       where: { id: user.id },
       data: {
-        provider: provider as Prisma.UserUpdateInput['provider'],
+        provider,
         providerId,
       },
     });
@@ -144,14 +138,14 @@ export class UsersService {
         email: createAdminDto.email,
         name: createAdminDto.name,
         password: hashedPassword,
-        role: 'ADMIN' as Prisma.UserCreateInput['role'],
-        provider: 'LOCAL' as Prisma.UserCreateInput['provider'],
+        role: UserRole.ADMIN,
+        provider: AuthProvider.LOCAL,
       },
     });
   }
   
   async validatePassword(user: User, password: string): Promise<boolean> {
-    if (user.provider !== 'LOCAL') {
+    if (user.provider !== AuthProvider.LOCAL) {
       return false;
     }
     return await bcrypt.compare(password, user.password || '');
