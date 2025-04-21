@@ -34,7 +34,7 @@ export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Post()
-  @ApiOperation({ summary: 'Create a new user' })
+  @ApiOperation({ summary: 'Create a new user (admin only)', description: 'Creates a new user with specified details. Requires admin role.' })
   @ApiBody({ type: CreateUserDto })
   @ApiResponse({ 
     status: 201, 
@@ -53,6 +53,9 @@ export class UsersController {
     }
   })
   @ApiResponse({ status: 400, description: 'Bad Request.' })
+  @ApiResponse({ status: 403, description: 'Forbidden - Admin role required.' })
+  @Roles(UserRole.ADMIN)
+  @UseGuards(RolesGuard)
   create(@Body() createUserDto: CreateUserDto) {
     return this.usersService.create(createUserDto);
   }

@@ -17,6 +17,7 @@
     },
     "/users": {
       "post": {
+        "description": "Creates a new user with specified details. Requires admin role.",
         "operationId": "UsersController_create",
         "parameters": [],
         "requestBody": {
@@ -75,6 +76,9 @@
           },
           "400": {
             "description": "Bad Request."
+          },
+          "403": {
+            "description": "Forbidden - Admin role required."
           }
         },
         "security": [
@@ -82,7 +86,7 @@
             "bearer": []
           }
         ],
-        "summary": "Create a new user",
+        "summary": "Create a new user (admin only)",
         "tags": [
           "users"
         ]
