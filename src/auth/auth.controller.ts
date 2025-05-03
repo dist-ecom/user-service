@@ -22,6 +22,7 @@ import {
   ApiQuery,
 } from '@nestjs/swagger';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { CreateMerchantDto } from '../users/dto/create-merchant.dto';
 
 // Define the request interface with Prisma User type
 interface RequestWithUser {
@@ -63,6 +64,37 @@ export class AuthController {
     createUserDto.provider = 'LOCAL';
     const user = await this.usersService.create(createUserDto);
     return this.authService.login(user);
+  }
+
+  @Post('register/merchant')
+  @ApiOperation({ summary: 'Register a new merchant' })
+  @ApiBody({ type: CreateMerchantDto })
+  @ApiResponse({ 
+    status: 201, 
+    description: 'Merchant registration successful',
+    schema: {
+      properties: {
+        user: {
+          type: 'object',
+          properties: {
+            id: { type: 'string' },
+            email: { type: 'string' },
+            name: { type: 'string' },
+            role: { type: 'string' }
+          }
+        },
+        access_token: { type: 'string' }
+      }
+    }
+  })
+  @ApiResponse({ status: 400, description: 'Bad request' })
+  async registerMerchant(@Body() createMerchantDto: CreateMerchantDto) {
+    // Set default provider if not provided
+    if (!createMerchantDto.provider) {
+      createMerchantDto.provider = 'LOCAL';
+    }
+    const merchant = await this.usersService.createMerchant(createMerchantDto);
+    return this.authService.login(merchant);
   }
 
   @UseGuards(AuthGuard('local'))
