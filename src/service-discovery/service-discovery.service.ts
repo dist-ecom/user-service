@@ -2,6 +2,13 @@ import { Injectable, Logger } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { ConfigService } from '@nestjs/config';
 import { firstValueFrom } from 'rxjs';
+import { AxiosResponse } from 'axios';
+
+interface ServiceInstance {
+  ServiceAddress: string;
+  ServicePort: number;
+  Checks: { Status: string }[];
+}
 
 @Injectable()
 export class ServiceDiscoveryService {
@@ -15,13 +22,13 @@ export class ServiceDiscoveryService {
     private readonly httpService: HttpService,
     private readonly configService: ConfigService,
   ) {
-    this.serviceRegistry = this.configService.get<string>('SERVICE_REGISTRY_URL');
+    this.serviceRegistry = this.configService.get<string>('SERVICE_REGISTRY_URL') || '';
     
     // Fallback to environment variables if service discovery fails
     this.fallbackServiceUrls = {
-      'product-service': this.configService.get<string>('PRODUCT_SERVICE_URL'),
-      'order-service': this.configService.get<string>('ORDER_SERVICE_URL'),
-      'payment-service': this.configService.get<string>('PAYMENT_SERVICE_URL'),
+      'product-service': this.configService.get<string>('PRODUCT_SERVICE_URL') || 'http://localhost:3001',
+      'order-service': this.configService.get<string>('ORDER_SERVICE_URL') || 'http://localhost:3002',
+      'payment-service': this.configService.get<string>('PAYMENT_SERVICE_URL') || 'http://localhost:3003',
     };
     
     this.logger.log(`Service discovery initialized with registry: ${this.serviceRegistry}`);
@@ -37,14 +44,18 @@ export class ServiceDiscoveryService {
     // If service registry is not configured, use fallback
     if (!this.serviceRegistry) {
       const fallbackUrl = this.fallbackServiceUrls[serviceName];
+      if (!fallbackUrl) {
+        this.logger.error(`No fallback URL configured for service: ${serviceName}`);
+        throw new Error(`No URL available for service: ${serviceName}`);
+      }
       this.logger.warn(`Service registry not configured, using fallback URL for ${serviceName}: ${fallbackUrl}`);
       return fallbackUrl;
     }
     
     try {
       // Query service registry
-      const response = await firstValueFrom(
-        this.httpService.get(`${this.serviceRegistry}/v1/catalog/service/${serviceName}`),
+      const response: AxiosResponse<ServiceInstance[]> = await firstValueFrom(
+        this.httpService.get<ServiceInstance[]>(`${this.serviceRegistry}/v1/catalog/service/${serviceName}`)
       );
       
       if (response.data && response.data.length > 0) {
@@ -59,10 +70,21 @@ export class ServiceDiscoveryService {
       }
       
       this.logger.warn(`No healthy instances found for ${serviceName}, using fallback URL`);
-      return this.fallbackServiceUrls[serviceName];
+      const fallbackUrl = this.fallbackServiceUrls[serviceName];
+      if (!fallbackUrl) {
+        this.logger.error(`No fallback URL configured for service: ${serviceName}`);
+        throw new Error(`No URL available for service: ${serviceName}`);
+      }
+      return fallbackUrl;
     } catch (error) {
-      this.logger.error(`Error discovering service ${serviceName}: ${error.message}`);
-      return this.fallbackServiceUrls[serviceName];
+      const err = error as Error;
+      this.logger.error(`Error discovering service ${serviceName}: ${err.message}`);
+      const fallbackUrl = this.fallbackServiceUrls[serviceName];
+      if (!fallbackUrl) {
+        this.logger.error(`No fallback URL configured for service: ${serviceName}`);
+        throw new Error(`No URL available for service: ${serviceName}`);
+      }
+      return fallbackUrl;
     }
   }
   
